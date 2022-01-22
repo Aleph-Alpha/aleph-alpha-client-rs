@@ -2,6 +2,10 @@
 name = "aleph-alpha-client-rs"
 version = "0.1.0"
 edition = "2021"
+description = "Interact with large language models provided by the Aleph Alpha API in Rust code"
+license = "MIT"
+keyword = ["ai", "aleph-alpha"]
+categories = ["api-bindings"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

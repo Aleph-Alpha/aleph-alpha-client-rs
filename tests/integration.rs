@@ -1,7 +1,6 @@
-
 use aleph_alpha_client::Client;
 use wiremock::{
-    matchers::{header, method, path, body_string},
+    matchers::{body_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
 };
 
@@ -31,7 +30,7 @@ async fn completion_with_luminous_base() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_uri(mock_server.uri(), token.to_owned());
+    let client = Client::with_base_uri(mock_server.uri(), token);
     let response = client.complete(body.to_owned()).await;
 
     eprintln!("{}", response);

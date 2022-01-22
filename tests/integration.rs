@@ -1,7 +1,7 @@
 
-use reqwest::Client;
+use aleph_alpha_client::Client;
 use wiremock::{
-    matchers::{header, method, path},
+    matchers::{header, method, path, body_string},
     Mock, MockServer, ResponseTemplate,
 };
 
@@ -12,6 +12,11 @@ async fn completion_with_luminous_base() {
 
     let token = "dummy-token";
     let answer = r#"{"id":"273a3698-876e-49cb-af71-dbe7a249df92","model_version":"2021-12","completions":[{"completion":"\n","finish_reason":"maximum_tokens"}]}"#;
+    let body = r#"{
+        "model": "luminous-base",
+        "prompt": [{"type": "text", "data": "Hello,"}],
+        "maximum_tokens": 1
+    }"#;
 
     Mock::given(method("POST"))
         .and(path("/complete"))
@@ -20,30 +25,16 @@ async fn completion_with_luminous_base() {
             format!("Bearer {}", token).as_str(),
         ))
         .and(header("Content-Type", "application/json"))
+        .and(body_string(body))
         .respond_with(ResponseTemplate::new(200).set_body_string(answer))
         // Mounting the mock on the mock server - it's now effective!
         .mount(&mock_server)
         .await;
 
-    let body = r#"{
-            "model": "luminous-base",
-            "prompt": [{"type": "text", "data": "Hello,"}],
-            "maximum_tokens": 1
-        }"#;
+    let client = Client::with_base_uri(mock_server.uri(), token.to_owned());
+    let response = client.complete(body.to_owned()).await;
 
-    let client = Client::new();
-    let response = client
-        .post(format!("{}/complete", mock_server.uri()))
-        .header("Authorization", format!("Bearer {}", token))
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()
-        .await
-        .unwrap();
+    eprintln!("{}", response);
 
-    let body = response.text().await.unwrap();
-
-    eprintln!("{}", body);
-
-    assert_eq!(answer, body)
+    assert_eq!(answer, response)
 }

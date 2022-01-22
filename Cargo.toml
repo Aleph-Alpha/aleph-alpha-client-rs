@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2021"
 description = "Interact with large language models provided by the Aleph Alpha API in Rust code"
 license = "MIT"
-keyword = ["ai", "aleph-alpha"]
+keywords = ["ai", "aleph-alpha"]
 categories = ["api-bindings"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+reqwest = "0.11.9"
 
 [dev-dependencies]
-reqwest = "0.11.9"
 tokio = { version = "1.15.0", features = ["rt", "macros"] }
 wiremock = "0.5.10"

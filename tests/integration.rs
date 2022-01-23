@@ -6,7 +6,6 @@ use wiremock::{
 
 #[tokio::test]
 async fn completion_with_luminous_base() {
-
     // Given
 
     // Start a background HTTP server on a random local part

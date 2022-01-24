@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Client, CompletionBody, Modality, Prompt};
+use aleph_alpha_client::{Client, CompletionBody, Prompt};
 use wiremock::{
     matchers::{body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,

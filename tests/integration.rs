@@ -35,7 +35,7 @@ async fn completion_with_luminous_base() {
     // When
     let task = CompletionBody {
         model: "luminous-base",
-        prompt: &[Modality::Text { data: "Hello," }][..],
+        prompt: &[Modality::from_text("Hello,")][..],
         maximum_tokens: 1,
     };
 

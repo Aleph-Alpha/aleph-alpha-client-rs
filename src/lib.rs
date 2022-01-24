@@ -10,6 +10,13 @@ pub enum Modality<'a> {
     Text { data: &'a str },
 }
 
+impl<'a> Modality<'a> {
+    /// Instantiates a text prompt
+    pub fn from_text(text: &'a str) -> Self {
+        Modality::Text { data: text }
+    }
+}
+
 /// Body send to the Aleph Alpha API on the POST `/completion` Route
 #[derive(Serialize, Debug)]
 pub struct CompletionBody<'a> {

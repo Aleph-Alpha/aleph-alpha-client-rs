@@ -23,7 +23,7 @@ async fn completion_with_luminous_base() {
         .and(path("/complete"))
         .and(header(
             "Authorization",
-            format!("Bearer {}", token).as_str(),
+            format!("Bearer {token}").as_str(),
         ))
         .and(header("Content-Type", "application/json"))
         .and(body_json_string(body))

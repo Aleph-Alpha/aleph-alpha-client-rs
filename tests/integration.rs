@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Client, CompletionBody, Modality};
+use aleph_alpha_client::{Client, CompletionBody, Modality, Prompt};
 use wiremock::{
     matchers::{body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -35,7 +35,7 @@ async fn completion_with_luminous_base() {
     // When
     let task = CompletionBody {
         model: "luminous-base",
-        prompt: &[Modality::from_text("Hello,")][..],
+        prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
     };
 

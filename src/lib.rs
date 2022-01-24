@@ -1,33 +1,6 @@
 use reqwest::{header, ClientBuilder};
 use serde::Serialize;
 
-/// The prompt for models can be a combination of different modalities (Text and Image). The type of
-/// modalities which are supported depend on the Model in question.
-#[derive(Serialize, Debug)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum Modality<'a> {
-    /// The only type of prompt which can be used with pure language models
-    Text { data: &'a str },
-}
-
-impl<'a> Modality<'a> {
-    /// Instantiates a text prompt
-    pub fn from_text(text: &'a str) -> Self {
-        Modality::Text { data: text }
-    }
-}
-
-/// Body send to the Aleph Alpha API on the POST `/completion` Route
-#[derive(Serialize, Debug)]
-pub struct CompletionBody<'a> {
-    /// Name of the model tasked with completing the prompt. E.g. `luminus-base`.
-    pub model: &'a str,
-    /// Prompt to complete. The modalities supported depend on `model`.
-    pub prompt: &'a [Modality<'a>],
-    /// Limits the number of tokens, which are generated for the completion.
-    pub maximum_tokens: u32,
-}
-
 /// Sends HTTP request to the Aleph Alpha API
 pub struct Client {
     base: String,
@@ -63,5 +36,44 @@ impl Client {
             .text()
             .await
             .unwrap()
+    }
+}
+
+/// Body send to the Aleph Alpha API on the POST `/completion` Route
+#[derive(Serialize, Debug)]
+pub struct CompletionBody<'a> {
+    /// Name of the model tasked with completing the prompt. E.g. `luminus-base`.
+    pub model: &'a str,
+    /// Prompt to complete. The modalities supported depend on `model`.
+    pub prompt: Prompt<'a>,
+    /// Limits the number of tokens, which are generated for the completion.
+    pub maximum_tokens: u32,
+}
+
+/// A prompt which is passed to the model for inference. Usually it is one text item, but it could
+/// also be a combination of several modalities like images and text.
+#[derive(Serialize, Debug)]
+pub struct Prompt<'a>([Modality<'a>; 1]);
+
+impl<'a> Prompt<'a> {
+    /// Create a prompt from a single text item.
+    pub fn from_text(text: &'a str) -> Self {
+        Self([Modality::from_text(text)])
+    }
+}
+
+/// The prompt for models can be a combination of different modalities (Text and Image). The type of
+/// modalities which are supported depend on the Model in question.
+#[derive(Serialize, Debug)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Modality<'a> {
+    /// The only type of prompt which can be used with pure language models
+    Text { data: &'a str },
+}
+
+impl<'a> Modality<'a> {
+    /// Instantiates a text prompt
+    pub fn from_text(text: &'a str) -> Self {
+        Modality::Text { data: text }
     }
 }

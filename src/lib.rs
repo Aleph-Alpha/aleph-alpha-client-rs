@@ -1,6 +1,8 @@
 use reqwest::{header, ClientBuilder};
 use serde::Serialize;
 
+pub type Error = reqwest::Error;
+
 /// Sends HTTP request to the Aleph Alpha API
 pub struct Client {
     base: String,
@@ -10,7 +12,7 @@ pub struct Client {
 impl Client {
     /// In production you typically would want set this to "https://api.aleph-alpha.de". Yet you may
     /// want to use a different instances for testing.
-    pub fn with_base_uri(base: String, token: &str) -> Self {
+    pub fn with_base_uri(base: String, token: &str) -> Result<Self, Error> {
         let mut headers = header::HeaderMap::new();
 
         let mut auth_value = header::HeaderValue::from_str(&format!("Bearer {}", token)).unwrap();
@@ -18,24 +20,19 @@ impl Client {
         auth_value.set_sensitive(true);
         headers.insert(header::AUTHORIZATION, auth_value);
 
-        let http = ClientBuilder::new()
-            .default_headers(headers)
-            .build()
-            .unwrap();
+        let http = ClientBuilder::new().default_headers(headers).build()?;
 
-        Self { base, http }
+        Ok(Self { base, http })
     }
 
-    pub async fn complete(&self, task: &CompletionBody<'_>) -> String {
+    pub async fn complete(&self, task: &CompletionBody<'_>) -> Result<String, Error> {
         self.http
             .post(format!("{}/complete", self.base))
             .json(task)
             .send()
-            .await
-            .unwrap()
+            .await?
             .text()
             .await
-            .unwrap()
     }
 }
 

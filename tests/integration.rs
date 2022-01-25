@@ -21,10 +21,7 @@ async fn completion_with_luminous_base() {
 
     Mock::given(method("POST"))
         .and(path("/complete"))
-        .and(header(
-            "Authorization",
-            format!("Bearer {token}").as_str(),
-        ))
+        .and(header("Authorization", format!("Bearer {token}").as_str()))
         .and(header("Content-Type", "application/json"))
         .and(body_json_string(body))
         .respond_with(ResponseTemplate::new(200).set_body_string(answer))
@@ -39,8 +36,8 @@ async fn completion_with_luminous_base() {
         maximum_tokens: 1,
     };
 
-    let client = Client::with_base_uri(mock_server.uri(), token);
-    let response = client.complete(&task).await;
+    let client = Client::with_base_uri(mock_server.uri(), token).unwrap();
+    let response = client.complete(&task).await.unwrap();
 
     // Then
     eprintln!("{}", response);

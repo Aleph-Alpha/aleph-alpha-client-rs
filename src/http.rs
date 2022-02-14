@@ -29,10 +29,11 @@ impl Client {
         Ok(Self { base, http })
     }
 
-    pub async fn complete(&self, task: &CompletionBody<'_>) -> Result<String, Error> {
+    pub async fn complete(&self, model: &str, task: &TaskCompletion<'_>) -> Result<String, Error> {
+        let body = BodyCompletion::new(model, task);
         self.http
             .post(format!("{}/complete", self.base))
-            .json(task)
+            .json(&body)
             .send()
             .await?
             .text()
@@ -42,7 +43,7 @@ impl Client {
 
 /// Body send to the Aleph Alpha API on the POST `/completion` Route
 #[derive(Serialize, Debug)]
-pub struct CompletionBody<'a> {
+struct BodyCompletion<'a> {
     /// Name of the model tasked with completing the prompt. E.g. `luminus-base`.
     pub model: &'a str,
     /// Prompt to complete. The modalities supported depend on `model`.
@@ -51,7 +52,7 @@ pub struct CompletionBody<'a> {
     pub maximum_tokens: u32,
 }
 
-impl<'a> CompletionBody<'a> {
+impl<'a> BodyCompletion<'a> {
     pub fn new(model: &'a str, task: &TaskCompletion<'a>) -> Self {
         Self {
             model,

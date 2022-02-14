@@ -31,13 +31,15 @@ impl Client {
 
     pub async fn complete(&self, model: &str, task: &TaskCompletion<'_>) -> Result<String, Error> {
         let body = BodyCompletion::new(model, task);
-        self.http
+        let response = self.http
             .post(format!("{}/complete", self.base))
             .json(&body)
             .send()
-            .await?
-            .text()
-            .await
+            .await?;
+
+            response.error_for_status_ref()?;
+
+            response.text().await
     }
 }
 

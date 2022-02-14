@@ -1,11 +1,34 @@
-use reqwest::{header, ClientBuilder};
-use serde::Serialize;
+use std::borrow::Cow;
+
+use reqwest::{header, ClientBuilder, StatusCode};
+use serde::{Deserialize, Serialize};
+use thiserror::Error as ThisError;
 
 use crate::TaskCompletion;
 
-use super:: Prompt;
+use super::Prompt;
 
-pub type Error = reqwest::Error;
+#[derive(ThisError, Debug)]
+pub enum Error {
+    /// User exceeds his current Task Quota.
+    #[error(
+        "You are trying to calculate more tasks in parallel, than you currently can, given how busy
+        the API is. Retry the operation again, once one of your other tasks is finished."
+    )]
+    TooManyTasks,
+    /// User exceeds his current Task Quota.
+    #[error(
+        "You are trying to send too many requests to the API in to short an interval. Slow down a
+        bit, otherwise these error will persist. Sorry for this, but we try to prevent DOS attacks."
+    )]
+    TooManyRequests,
+    /// An error on the Http Protocl level.
+    #[error("HTTP request failed with status code {}. Body:\n{}", status, body)]
+    Http { status: u16, body: String },
+    /// Most likely either TLS errors creating the Client, or IO errors.
+    #[error(transparent)]
+    Other(#[from] reqwest::Error),
+}
 
 /// Sends HTTP request to the Aleph Alpha API
 pub struct Client {
@@ -31,16 +54,56 @@ impl Client {
 
     pub async fn complete(&self, model: &str, task: &TaskCompletion<'_>) -> Result<String, Error> {
         let body = BodyCompletion::new(model, task);
-        let response = self.http
+        let response = self
+            .http
             .post(format!("{}/complete", self.base))
             .json(&body)
             .send()
             .await?;
 
-            response.error_for_status_ref()?;
+        let status = response.status();
+        if !status.is_success() {
+            // Store body in a variable, so we can use it, even if it is not an Error emmitted by
+            // the API, but an intermediate Proxy like NGinx, so we can still forward the error
+            // message.
+            let body = response.text().await?;
+            if status == StatusCode::TOO_MANY_REQUESTS {
+                // Distinguish between request rate and task quota limiting.
 
-            response.text().await
+                // For this error to be quota related it must be an API error with status
+                // TOO_MANY_TASKS
+                if let Some("TOO_MANY_TASKS") = serde_json::from_str::<ApiError>(&body)
+                    .ok()
+                    .map(|api_error| api_error.code)
+                    .as_deref()
+                {
+                    return Err(Error::TooManyTasks)
+                } else {
+                    return Err(Error::TooManyRequests)
+                }
+            } else {
+                // It's a generic Http error
+                return Err(Error::Http {
+                    status: status.as_u16(),
+                    body,
+                });
+            }
+        }
+
+        let answer = response.text().await?;
+        Ok(answer)
     }
+}
+
+/// We are only interessted in the status codes of the API.
+#[derive(Deserialize)]
+struct ApiError<'a> {
+    /// Unique string in capital letters emitted by the API to signal different kinds of errors in a
+    /// finer granualrity then the HTTP status codes alone would allow for.
+    ///
+    /// E.g. Differentiating between request rate limiting and parallel tasks limiting which both
+    /// are 429 (the former is emmited by NGinx though).
+    code: Cow<'a, str>,
 }
 
 /// Body send to the Aleph Alpha API on the POST `/completion` Route

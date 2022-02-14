@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Client, Prompt, TaskCompletion};
+use aleph_alpha_client::{Client, Prompt, TaskCompletion, Error};
 use wiremock::{
     matchers::{body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -84,8 +84,48 @@ async fn detect_too_many_tasks() {
     let model = "luminous-base";
 
     let client = Client::with_base_uri(mock_server.uri(), token).unwrap();
-    let response = client.complete(model, &task).await.unwrap_err();
+    let error = client.complete(model, &task).await.unwrap_err();
 
-    // Then
-    eprintln!("{}", response);
+    assert!(matches!(error, Error::TooManyTasks));
+}
+
+/// If we open too many requests at once, we may trigger rate limmiting. We want this scenario to be
+/// easily detectible by the user, so he/she/it can start sending requests slower.
+#[tokio::test]
+async fn detect_rate_limmiting() {
+    // Given
+
+    // Start a background HTTP server on a random local part
+    let mock_server = MockServer::start().await;
+
+    let token = "dummy-token";
+    let answer = r#"Too many requests"#;
+    let body = r#"{
+        "model": "luminous-base",
+        "prompt": [{"type": "text", "data": "Hello,"}],
+        "maximum_tokens": 1
+    }"#;
+
+    Mock::given(method("POST"))
+        .and(path("/complete"))
+        .and(header("Authorization", format!("Bearer {token}").as_str()))
+        .and(header("Content-Type", "application/json"))
+        .and(body_json_string(body))
+        .respond_with(ResponseTemplate::new(429).set_body_string(answer))
+        // Mounting the mock on the mock server - it's now effective!
+        .mount(&mock_server)
+        .await;
+
+    // When
+    let task = TaskCompletion {
+        prompt: Prompt::from_text("Hello,"), 
+        maximum_tokens: 1
+    };
+
+    let model = "luminous-base";
+
+    let client = Client::with_base_uri(mock_server.uri(), token).unwrap();
+    let error = client.complete(model, &task).await.unwrap_err();
+
+    assert!(matches!(error, Error::TooManyRequests));
 }

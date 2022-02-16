@@ -1,8 +1,9 @@
 use serde::Serialize;
 
 mod http;
+mod authentication;
 
-pub use self::http::{Client, Error};
+pub use self::{authentication::Authentication, http::{Client, Error}};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {

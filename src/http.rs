@@ -4,9 +4,8 @@ use reqwest::{header, ClientBuilder, StatusCode};
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 
-use crate::TaskCompletion;
+use crate::{TaskCompletion, Authentication, Prompt};
 
-use super::Prompt;
 
 #[derive(ThisError, Debug)]
 pub enum Error {
@@ -39,7 +38,9 @@ pub struct Client {
 impl Client {
     /// In production you typically would want set this to "https://api.aleph-alpha.de". Yet you may
     /// want to use a different instances for testing.
-    pub fn with_base_uri(base: String, token: &str) -> Result<Self, Error> {
+    pub async fn with_base_url(host: String, auth: Authentication<'_>) -> Result<Self, Error> {
+        let token = auth.api_token(&host).await?;
+
         let mut headers = header::HeaderMap::new();
 
         let mut auth_value = header::HeaderValue::from_str(&format!("Bearer {}", token)).unwrap();
@@ -49,7 +50,7 @@ impl Client {
 
         let http = ClientBuilder::new().default_headers(headers).build()?;
 
-        Ok(Self { base, http })
+        Ok(Self { base: host, http })
     }
 
     pub async fn complete(&self, model: &str, task: &TaskCompletion<'_>) -> Result<String, Error> {

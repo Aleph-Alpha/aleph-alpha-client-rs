@@ -1,9 +1,53 @@
 use serde::Serialize;
 
-mod http;
 mod authentication;
+mod http;
 
-pub use self::{authentication::Authentication, http::{Client, Error, ResponseCompletion, Completion }};
+pub use self::{
+    authentication::Authentication,
+    http::{Client, Completion, Error, ResponseCompletion},
+};
+
+/// Sampling controls how the tokens ("words") are selected for the completion.
+pub enum Sampling {
+    /// Always chooses the token most likely to come next.
+    Deterministic,
+    /// A temperature encourages teh model to produce less probable outputs ("be more creative").
+    /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
+    /// response or 0.0 to get the same behaviour as [`Self::Deterministic`].
+    Temperature(f64),
+    /// Introduces random sampling for generated tokens by randomly selecting the next token from
+    /// the k most likely options. A value larger than 1 encourages the model to be more creative.
+    /// Set to 0 to get the same behaviour as [`Self::Deterministic`].
+    TopK(u64),
+    /// Introduces random sampling for generated tokens by randomly selecting the next token from
+    /// the smallest possible set of tokens whose cumulative probability exceeds the probability
+    /// top_p. Set to 0 to get the same behaviour as [`Self::Deterministic`].
+    TopP(f64)
+}
+
+impl Sampling {
+    fn temperature(&self) -> Option<f64> {
+        match self {
+            Sampling::Temperature(temperature) => Some(*temperature),
+            _ => None,
+        }
+    }
+
+    fn top_p(&self) -> Option<f64> {
+        match self {
+            Sampling::TopP(p) => Some(*p),
+            _ => None,
+        }
+    }
+
+    fn top_k(&self) -> Option<u64> {
+        match self {
+            Sampling::TopK(k) => Some(*k),
+            _ => None,
+        }
+    }
+}
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -11,10 +55,12 @@ pub struct TaskCompletion<'a> {
     /// empty string. The prompt may contain a zero shot or few shot task.
     pub prompt: Prompt<'a>,
     /// The maximum number of tokens to be generated. Completion will terminate after the maximum
-    /// number of tokens is reached. Increase this value to generate longer texts. A text is split
-    /// into tokens.  Usually there are more tokens than words. The total number of tokens of prompt
+    /// number of tokens is reachedIncrease this value to allow for longer outputs. A text is split
+    /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
     /// and maximum_tokens depends on the model.
     pub maximum_tokens: u32,
+    /// Sampling controls how the tokens ("words") are selected for the completion.
+    pub sampling: Sampling,
 }
 
 /// A prompt which is passed to the model for inference. Usually it is one text item, but it could

@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
@@ -28,8 +28,13 @@ impl<'a> Authentication<'a> {
                 let response = reqwest::Client::builder()
                     .build()?
                     .post(format!("{host}/users/login"))
-                    .json(&LoginRequestBody { email: user, password }).send().await?;
-                
+                    .json(&LoginRequestBody {
+                        email: user,
+                        password,
+                    })
+                    .send()
+                    .await?;
+
                 let LoginResponseBody { token } = response.json().await?;
 
                 Ok(Cow::Owned(token))
@@ -47,5 +52,5 @@ struct LoginRequestBody<'a> {
 
 #[derive(Deserialize)]
 struct LoginResponseBody {
-    token: String
+    token: String,
 }

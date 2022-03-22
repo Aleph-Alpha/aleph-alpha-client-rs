@@ -35,7 +35,6 @@ pub struct Client {
 }
 
 impl Client {
-
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
     pub async fn new(auth: Authentication<'_>) -> Result<Self, Error> {
         Self::with_base_url("api.aleph-alpha".to_owned(), auth).await
@@ -125,6 +124,12 @@ struct BodyCompletion<'a> {
     pub prompt: Prompt<'a>,
     /// Limits the number of tokens, which are generated for the completion.
     pub maximum_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_k: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_p: Option<f64>,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -133,6 +138,9 @@ impl<'a> BodyCompletion<'a> {
             model,
             prompt: task.prompt,
             maximum_tokens: task.maximum_tokens,
+            temperature: task.sampling.temperature(),
+            top_k: task.sampling.top_k(),
+            top_p: task.sampling.top_p(),
         }
     }
 }
@@ -146,8 +154,7 @@ pub struct ResponseCompletion {
 impl ResponseCompletion {
     /// The best completion in the answer.
     pub fn best(&self) -> &Completion {
-        self
-            .completions
+        self.completions
             .first()
             .expect("Response is assumed to always have at least one completion")
     }

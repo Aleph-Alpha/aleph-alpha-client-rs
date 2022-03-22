@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Authentication, Client, Error, Prompt, TaskCompletion};
+use aleph_alpha_client::{Authentication, Client, Error, Prompt, Sampling, TaskCompletion};
 use wiremock::{
     matchers::{body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -32,16 +32,18 @@ async fn completion_with_luminous_base() {
     let task = TaskCompletion {
         prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
+        sampling: Sampling::Deterministic,
     };
 
     let model = "luminous-base";
 
-    let client =
-        Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token")).await.unwrap();
+    let client = Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token"))
+        .await
+        .unwrap();
     let response = client.complete(model, &task).await.unwrap();
     let actual = response.best_text();
 
-    // Then    
+    // Then
     assert_eq!("\n", actual)
 }
 
@@ -79,12 +81,14 @@ async fn detect_too_many_tasks() {
     let task = TaskCompletion {
         prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
+        sampling: Sampling::Deterministic,
     };
 
     let model = "luminous-base";
 
-    let client =
-        Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token")).await.unwrap();
+    let client = Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token"))
+        .await
+        .unwrap();
     let error = client.complete(model, &task).await.unwrap_err();
 
     assert!(matches!(error, Error::TooManyTasks));
@@ -120,12 +124,14 @@ async fn detect_rate_limmiting() {
     let task = TaskCompletion {
         prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
+        sampling: Sampling::Deterministic,
     };
 
     let model = "luminous-base";
 
-    let client =
-        Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token")).await.unwrap();
+    let client = Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token"))
+        .await
+        .unwrap();
     let error = client.complete(model, &task).await.unwrap_err();
 
     assert!(matches!(error, Error::TooManyRequests));

@@ -26,6 +26,7 @@ fn main() {
         // The maximum number of tokens within the completion. A token is very roughly something
         // like a word. The bigger this number, the longer the completion **might** be.
         maximum_tokens: 64,
+        sampling: Sampling::Deterministic,
     };
     
     // Send the task to the client.

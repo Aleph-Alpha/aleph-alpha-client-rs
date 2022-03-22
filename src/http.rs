@@ -35,6 +35,12 @@ pub struct Client {
 }
 
 impl Client {
+
+    /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
+    pub async fn new(auth: Authentication<'_>) -> Result<Self, Error> {
+        Self::with_base_url("api.aleph-alpha".to_owned(), auth).await
+    }
+
     /// In production you typically would want set this to "https://api.aleph-alpha.de". Yet you may
     /// want to use a different instances for testing.
     pub async fn with_base_url(host: String, auth: Authentication<'_>) -> Result<Self, Error> {

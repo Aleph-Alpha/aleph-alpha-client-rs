@@ -41,7 +41,7 @@ async fn completion_with_luminous_base() {
         .await
         .unwrap();
     let response = client.complete(model, &task).await.unwrap();
-    let actual = response.best_text();
+    let actual = response.completion;
 
     // Then
     assert_eq!("\n", actual)

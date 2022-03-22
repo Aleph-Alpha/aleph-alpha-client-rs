@@ -33,7 +33,7 @@ fn main() {
     let response = client.complete(model, &task).await.unwrap();
 
     // Print entire sentence with completion
-    println!("The most important thing is{}", response.best_text());
+    println!("The most important thing is{}", response.completion);
 }
 ```
 

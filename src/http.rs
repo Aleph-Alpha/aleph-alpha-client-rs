@@ -61,7 +61,7 @@ impl Client {
         &self,
         model: &str,
         task: &TaskCompletion<'_>,
-    ) -> Result<ResponseCompletion, Error> {
+    ) -> Result<Completion, Error> {
         let body = BodyCompletion::new(model, task);
         let response = self
             .http
@@ -99,8 +99,8 @@ impl Client {
             }
         }
 
-        let answer = response.json().await?;
-        Ok(answer)
+        let mut answer: ResponseCompletion = response.json().await?;
+        Ok(answer.completions.pop().unwrap())
     }
 }
 

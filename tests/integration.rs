@@ -11,7 +11,7 @@ async fn completion_with_luminous_base() {
     // Start a background HTTP server on a random local part
     let mock_server = MockServer::start().await;
 
-    let answer = r#"{"id":"273a3698-876e-49cb-af71-dbe7a249df92","model_version":"2021-12","completions":[{"completion":"\n","finish_reason":"maximum_tokens"}]}"#;
+    let answer = r#"{"model_version":"2021-12","completions":[{"completion":"\n","finish_reason":"maximum_tokens"}]}"#;
     let body = r#"{
         "model": "luminous-base",
         "prompt": [{"type": "text", "data": "Hello,"}],
@@ -39,10 +39,10 @@ async fn completion_with_luminous_base() {
     let client =
         Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token")).await.unwrap();
     let response = client.complete(model, &task).await.unwrap();
+    let actual = response.best_text();
 
-    // Then
-    eprintln!("{}", response);
-    assert_eq!(answer, response)
+    // Then    
+    assert_eq!("\n", actual)
 }
 
 /// If we open too many tasks at once, at one point the API, will tell us that we exceeded our

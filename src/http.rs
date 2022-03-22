@@ -4,8 +4,7 @@ use reqwest::{header, ClientBuilder, StatusCode};
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 
-use crate::{TaskCompletion, Authentication, Prompt};
-
+use crate::{Authentication, Prompt, TaskCompletion};
 
 #[derive(ThisError, Debug)]
 pub enum Error {
@@ -53,7 +52,11 @@ impl Client {
         Ok(Self { base: host, http })
     }
 
-    pub async fn complete(&self, model: &str, task: &TaskCompletion<'_>) -> Result<String, Error> {
+    pub async fn complete(
+        &self,
+        model: &str,
+        task: &TaskCompletion<'_>,
+    ) -> Result<ResponseCompletion, Error> {
         let body = BodyCompletion::new(model, task);
         let response = self
             .http
@@ -78,9 +81,9 @@ impl Client {
                     .map(|api_error| api_error.code)
                     .as_deref()
                 {
-                    return Err(Error::TooManyTasks)
+                    return Err(Error::TooManyTasks);
                 } else {
-                    return Err(Error::TooManyRequests)
+                    return Err(Error::TooManyRequests);
                 }
             } else {
                 // It's a generic Http error
@@ -91,7 +94,7 @@ impl Client {
             }
         }
 
-        let answer = response.text().await?;
+        let answer = response.json().await?;
         Ok(answer)
     }
 }
@@ -126,4 +129,31 @@ impl<'a> BodyCompletion<'a> {
             maximum_tokens: task.maximum_tokens,
         }
     }
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct ResponseCompletion {
+    pub model_version: String,
+    pub completions: Vec<Completion>,
+}
+
+impl ResponseCompletion {
+    /// The best completion in the answer.
+    pub fn best(&self) -> &Completion {
+        self
+            .completions
+            .first()
+            .expect("Response is assumed to always have at least one completion")
+    }
+
+    /// Text of the best completion.
+    pub fn best_text(&self) -> &str {
+        &self.best().completion
+    }
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct Completion {
+    pub completion: String,
+    pub finish_reason: String,
 }

@@ -57,6 +57,8 @@ impl Client {
         Ok(Self { base: host, http })
     }
 
+
+
     pub async fn complete(
         &self,
         model: &str,
@@ -70,38 +72,43 @@ impl Client {
             .send()
             .await?;
 
-        let status = response.status();
-        if !status.is_success() {
-            // Store body in a variable, so we can use it, even if it is not an Error emmitted by
-            // the API, but an intermediate Proxy like NGinx, so we can still forward the error
-            // message.
-            let body = response.text().await?;
-            if status == StatusCode::TOO_MANY_REQUESTS {
-                // Distinguish between request rate and task quota limiting.
-
-                // For this error to be quota related it must be an API error with status
-                // TOO_MANY_TASKS
-                if let Some("TOO_MANY_TASKS") = serde_json::from_str::<ApiError>(&body)
-                    .ok()
-                    .map(|api_error| api_error.code)
-                    .as_deref()
-                {
-                    return Err(Error::TooManyTasks);
-                } else {
-                    return Err(Error::TooManyRequests);
-                }
-            } else {
-                // It's a generic Http error
-                return Err(Error::Http {
-                    status: status.as_u16(),
-                    body,
-                });
-            }
-        }
+        let response = translate_http_error(response).await?;
 
         let mut answer: ResponseCompletion = response.json().await?;
         Ok(answer.completions.pop().unwrap())
     }
+}
+
+async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Response, Error> {
+    let status = response.status();
+    if !status.is_success() {
+        // Store body in a variable, so we can use it, even if it is not an Error emmitted by
+        // the API, but an intermediate Proxy like NGinx, so we can still forward the error
+        // message.
+        let body = response.text().await?;
+        if status == StatusCode::TOO_MANY_REQUESTS {
+            // Distinguish between request rate and task quota limiting.
+
+            // For this error to be quota related it must be an API error with status
+            // TOO_MANY_TASKS
+            if let Some("TOO_MANY_TASKS") = serde_json::from_str::<ApiError>(&body)
+                .ok()
+                .map(|api_error| api_error.code)
+                .as_deref()
+            {
+                return Err(Error::TooManyTasks);
+            } else {
+                return Err(Error::TooManyRequests);
+            }
+        } else {
+            // It's a generic Http error
+            return Err(Error::Http {
+                status: status.as_u16(),
+                body,
+            });
+        }
+    }
+    Ok(response)
 }
 
 /// We are only interessted in the status codes of the API.

@@ -11,18 +11,18 @@ pub use self::{
 /// Sampling controls how the tokens ("words") are selected for the completion.
 pub enum Sampling {
     /// Always chooses the token most likely to come next.
-    Deterministic,
+    MostLikely,
     /// A temperature encourages teh model to produce less probable outputs ("be more creative").
     /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
-    /// response or 0.0 to get the same behaviour as [`Self::Deterministic`].
+    /// response or 0.0 to get the same behaviour as [`Self::MostLikely`].
     Temperature(f64),
     /// Introduces random sampling for generated tokens by randomly selecting the next token from
     /// the k most likely options. A value larger than 1 encourages the model to be more creative.
-    /// Set to 0 to get the same behaviour as [`Self::Deterministic`].
+    /// Set to 0 to get the same behaviour as [`Self::MostLikely`].
     TopK(u64),
     /// Introduces random sampling for generated tokens by randomly selecting the next token from
     /// the smallest possible set of tokens whose cumulative probability exceeds the probability
-    /// top_p. Set to 0 to get the same behaviour as [`Self::Deterministic`].
+    /// top_p. Set to 0 to get the same behaviour as [`Self::MostLikely`].
     TopP(f64)
 }
 

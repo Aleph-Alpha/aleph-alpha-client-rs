@@ -32,7 +32,7 @@ async fn completion_with_luminous_base() {
     let task = TaskCompletion {
         prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
-        sampling: Sampling::Deterministic,
+        sampling: Sampling::MostLikely,
     };
 
     let model = "luminous-base";
@@ -81,7 +81,7 @@ async fn detect_too_many_tasks() {
     let task = TaskCompletion {
         prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
-        sampling: Sampling::Deterministic,
+        sampling: Sampling::MostLikely,
     };
 
     let model = "luminous-base";
@@ -124,7 +124,7 @@ async fn detect_rate_limmiting() {
     let task = TaskCompletion {
         prompt: Prompt::from_text("Hello,"),
         maximum_tokens: 1,
-        sampling: Sampling::Deterministic,
+        sampling: Sampling::MostLikely,
     };
 
     let model = "luminous-base";

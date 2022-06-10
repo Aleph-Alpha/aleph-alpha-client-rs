@@ -1,10 +1,8 @@
 use serde::Serialize;
 
-mod authentication;
 mod http;
 
 pub use self::{
-    authentication::Authentication,
     http::{Client, Completion, Error, ResponseCompletion},
 };
 

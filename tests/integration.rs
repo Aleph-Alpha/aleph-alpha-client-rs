@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Authentication, Client, Error, Prompt, Sampling, TaskCompletion};
+use aleph_alpha_client::{Client, Error, Prompt, Sampling, TaskCompletion};
 use wiremock::{
     matchers::{body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -37,8 +37,7 @@ async fn completion_with_luminous_base() {
 
     let model = "luminous-base";
 
-    let client = Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token"))
-        .await
+    let client = Client::with_base_url(mock_server.uri(), "dummy-token")
         .unwrap();
     let response = client.complete(model, &task).await.unwrap();
     let actual = response.completion;
@@ -86,8 +85,7 @@ async fn detect_too_many_tasks() {
 
     let model = "luminous-base";
 
-    let client = Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token"))
-        .await
+    let client = Client::with_base_url(mock_server.uri(), "dummy-token")
         .unwrap();
     let error = client.complete(model, &task).await.unwrap_err();
 
@@ -129,77 +127,9 @@ async fn detect_rate_limmiting() {
 
     let model = "luminous-base";
 
-    let client = Client::with_base_url(mock_server.uri(), Authentication::ApiToken("dummy-token"))
-        .await
+    let client = Client::with_base_url(mock_server.uri(), "dummy-token")
         .unwrap();
     let error = client.complete(model, &task).await.unwrap_err();
 
     assert!(matches!(error, Error::TooManyRequests));
-}
-
-#[tokio::test]
-async fn login_with_invalid_credentials() {
-    // Given
-
-    // Start a background HTTP server on a random local part
-    let mock_server = MockServer::start().await;
-
-    let body = r#"{"email":"user@corp.com", "password":"Invalid"}"#;
-    let response = r#"{"error":"Invalid username or password","code":"INVALID_CREDENTIALS"}"#;
-
-    Mock::given(method("POST"))
-        .and(path("/users/login"))
-        .and(header("Content-Type", "application/json"))
-        .and(body_json_string(body))
-        .respond_with(ResponseTemplate::new(401).set_body_string(response))
-        // Mounting the mock on the mock server - it's now effective!
-        .mount(&mock_server)
-        .await;
-
-    // When user tries to acquire token
-    let result = Client::with_base_url(
-        mock_server.uri(),
-        Authentication::Credentials {
-            user: "user@corp.com",
-            password: "MySecret",
-        },
-    )
-    .await;
-
-    // Then
-    assert!(result.is_err())
-}
-
-#[tokio::test]
-async fn login_with_credentials() {
-    // Given
-
-    // Start a background HTTP server on a random local part
-    let mock_server = MockServer::start().await;
-
-    let body = r#"{"email":"user@corp.com","password":"MySecret"}"#;
-    //let response = r#"{"id":12,"email":"user@corp.com","role":"Client","token":"dummy-token","first_failed_login":"2022-02-16T13:14:17.328878977Z","num_failed_logins":1,"locked":false}"#;
-    let response = r#"{"token":"dummy-token"}"#;
-
-    Mock::given(method("POST"))
-        .and(path("/users/login"))
-        .and(header("Content-Type", "application/json"))
-        .and(body_json_string(body))
-        .respond_with(ResponseTemplate::new(200).set_body_string(response))
-        // Mounting the mock on the mock server - it's now effective!
-        .mount(&mock_server)
-        .await;
-
-    // When user tries to acquire token
-    let result = Client::with_base_url(
-        mock_server.uri(),
-        Authentication::Credentials {
-            user: "user@corp.com",
-            password: "MySecret",
-        },
-    )
-    .await;
-
-    // Then
-    assert!(result.is_ok())
 }

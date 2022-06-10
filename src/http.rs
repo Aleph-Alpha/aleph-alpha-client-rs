@@ -4,7 +4,7 @@ use reqwest::{header, ClientBuilder, StatusCode};
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 
-use crate::{Authentication, Prompt, TaskCompletion};
+use crate::{Prompt, TaskCompletion};
 
 #[derive(ThisError, Debug)]
 pub enum Error {
@@ -36,18 +36,16 @@ pub struct Client {
 
 impl Client {
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
-    pub async fn new(auth: Authentication<'_>) -> Result<Self, Error> {
-        Self::with_base_url("api.aleph-alpha.com".to_owned(), auth).await
+    pub fn new(api_token: &str) -> Result<Self, Error> {
+        Self::with_base_url("api.aleph-alpha.com".to_owned(), api_token)
     }
 
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet you
     /// may want to use a different instances for testing.
-    pub async fn with_base_url(host: String, auth: Authentication<'_>) -> Result<Self, Error> {
-        let token = auth.api_token(&host).await?;
-
+    pub fn with_base_url(host: String, api_token: &str) -> Result<Self, Error> {
         let mut headers = header::HeaderMap::new();
 
-        let mut auth_value = header::HeaderValue::from_str(&format!("Bearer {}", token)).unwrap();
+        let mut auth_value = header::HeaderValue::from_str(&format!("Bearer {api_token}")).unwrap();
         // Consider marking security-sensitive headers with `set_sensitive`.
         auth_value.set_sensitive(true);
         headers.insert(header::AUTHORIZATION, auth_value);

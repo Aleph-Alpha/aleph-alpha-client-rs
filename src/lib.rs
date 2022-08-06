@@ -2,49 +2,31 @@ use serde::Serialize;
 
 mod http;
 
-pub use self::{
-    http::{Client, Completion, Error, ResponseCompletion},
-};
+pub use self::http::{Client, Completion, Error, ResponseCompletion};
 
 /// Sampling controls how the tokens ("words") are selected for the completion.
-pub enum Sampling {
-    /// Always chooses the token most likely to come next.
-    MostLikely,
+pub struct Sampling {
     /// A temperature encourages teh model to produce less probable outputs ("be more creative").
     /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
-    /// response or 0.0 to get the same behaviour as [`Self::MostLikely`].
-    Temperature(f64),
+    /// response.
+    pub temperature: Option<f64>,
     /// Introduces random sampling for generated tokens by randomly selecting the next token from
     /// the k most likely options. A value larger than 1 encourages the model to be more creative.
-    /// Set to 0 to get the same behaviour as [`Self::MostLikely`].
-    TopK(u64),
+    /// Set to 0 to get the same behaviour as `None`.
+    pub top_k: Option<u32>,
     /// Introduces random sampling for generated tokens by randomly selecting the next token from
     /// the smallest possible set of tokens whose cumulative probability exceeds the probability
-    /// top_p. Set to 0 to get the same behaviour as [`Self::MostLikely`].
-    TopP(f64)
+    /// top_p. Set to 0 to get the same behaviour as `None`.
+    pub top_p: Option<f64>,
 }
 
 impl Sampling {
-    fn temperature(&self) -> Option<f64> {
-        match self {
-            Sampling::Temperature(temperature) => Some(*temperature),
-            _ => None,
-        }
-    }
-
-    fn top_p(&self) -> Option<f64> {
-        match self {
-            Sampling::TopP(p) => Some(*p),
-            _ => None,
-        }
-    }
-
-    fn top_k(&self) -> Option<u64> {
-        match self {
-            Sampling::TopK(k) => Some(*k),
-            _ => None,
-        }
-    }
+    /// Always chooses the token most likely to come next.
+    pub const MOST_LIKELY: Self = Sampling {
+        temperature: None,
+        top_k: None,
+        top_p: None,
+    };
 }
 
 /// Completes a prompt. E.g. continues a text.

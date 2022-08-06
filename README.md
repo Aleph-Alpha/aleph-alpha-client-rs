@@ -10,10 +10,7 @@ use aleph_alpha_client::{Client, Authentication};
 #[tokio::main]
 fn main() {
     // Authenticate against API. Fetches token.
-    let client = Client::new(Authentication::Credentials {
-        user: "Joe",
-        password: "Joes securer Aleph Alpha API password"
-    }).await;
+    let client = Client::new("ALEPH_ALPHA_API_TOKEN").await;
 
     // Name of the model we we want to use. Large models give usually better answer, but are also
     // more costly.
@@ -26,7 +23,7 @@ fn main() {
         // The maximum number of tokens within the completion. A token is very roughly something
         // like a word. The bigger this number, the longer the completion **might** be.
         maximum_tokens: 64,
-        sampling: Sampling::Deterministic,
+        sampling: Sampling::MOST_LIKELY,
     };
     
     // Send the task to the client.
@@ -38,3 +35,5 @@ fn main() {
 ```
 
 **Work in Progress**
+
+Currently the Rust client is not a priority on our Roadmap, so expect this client to be incomplete. If we work on it expect intefaces to break.

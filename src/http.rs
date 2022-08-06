@@ -10,12 +10,6 @@ use crate::{Prompt, TaskCompletion};
 pub enum Error {
     /// User exceeds his current Task Quota.
     #[error(
-        "You are trying to calculate more tasks in parallel, than you currently can, given how busy
-        the API is. Retry the operation again, once one of your other tasks is finished."
-    )]
-    TooManyTasks,
-    /// User exceeds his current Task Quota.
-    #[error(
         "You are trying to send too many requests to the API in to short an interval. Slow down a
         bit, otherwise these error will persist. Sorry for this, but we try to prevent DOS attacks."
     )]
@@ -55,8 +49,6 @@ impl Client {
         Ok(Self { base: host, http })
     }
 
-
-
     pub async fn complete(
         &self,
         model: &str,
@@ -86,18 +78,7 @@ async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Re
         let body = response.text().await?;
         if status == StatusCode::TOO_MANY_REQUESTS {
             // Distinguish between request rate and task quota limiting.
-
-            // For this error to be quota related it must be an API error with status
-            // TOO_MANY_TASKS
-            if let Some("TOO_MANY_TASKS") = serde_json::from_str::<ApiError>(&body)
-                .ok()
-                .map(|api_error| api_error.code)
-                .as_deref()
-            {
-                return Err(Error::TooManyTasks);
-            } else {
-                return Err(Error::TooManyRequests);
-            }
+            return Err(Error::TooManyRequests);
         } else {
             // It's a generic Http error
             return Err(Error::Http {
@@ -117,7 +98,7 @@ struct ApiError<'a> {
     ///
     /// E.g. Differentiating between request rate limiting and parallel tasks limiting which both
     /// are 429 (the former is emmited by NGinx though).
-    code: Cow<'a, str>,
+    _code: Cow<'a, str>,
 }
 
 /// Body send to the Aleph Alpha API on the POST `/completion` Route
@@ -132,7 +113,7 @@ struct BodyCompletion<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<u64>,
+    pub top_k: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
 }
@@ -143,9 +124,9 @@ impl<'a> BodyCompletion<'a> {
             model,
             prompt: task.prompt,
             maximum_tokens: task.maximum_tokens,
-            temperature: task.sampling.temperature(),
-            top_k: task.sampling.top_k(),
-            top_p: task.sampling.top_p(),
+            temperature: task.sampling.temperature,
+            top_k: task.sampling.top_k,
+            top_p: task.sampling.top_p,
         }
     }
 }

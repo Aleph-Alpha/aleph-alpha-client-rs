@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+* Add `Error::Busy` to conviniently handle busy models.
+
 ## 0.1.1
 
 * Fix: `Client::new` did not work due to a missing `https://` in the base URL.

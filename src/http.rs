@@ -10,10 +10,18 @@ use crate::{Prompt, TaskCompletion};
 pub enum Error {
     /// User exceeds his current Task Quota.
     #[error(
-        "You are trying to send too many requests to the API in to short an interval. Slow down a
+        "You are trying to send too many requests to the API in to short an interval. Slow down a \
         bit, otherwise these error will persist. Sorry for this, but we try to prevent DOS attacks."
     )]
     TooManyRequests,
+    /// Model is busy. Most likely due to many other users requesting its services right now.
+    #[error(
+        "Sorry the request to the Aleph Alpha API has been rejected due to the requested model \
+        being very busy at the moment. We found it unlikely that your request would finish in a \
+        reasonable timeframe, so it was rejected right away, rather than make you wait. You are \
+        welcome to retry your request any time."
+    )]
+    Busy,
     /// An error on the Http Protocl level.
     #[error("HTTP request failed with status code {}. Body:\n{}", status, body)]
     Http { status: u16, body: String },
@@ -76,18 +84,18 @@ async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Re
         // the API, but an intermediate Proxy like NGinx, so we can still forward the error
         // message.
         let body = response.text().await?;
-        if status == StatusCode::TOO_MANY_REQUESTS {
-            // Distinguish between request rate and task quota limiting.
-            return Err(Error::TooManyRequests);
-        } else {
-            // It's a generic Http error
-            return Err(Error::Http {
+        let translated_error = match status {
+            StatusCode::TOO_MANY_REQUESTS => Error::TooManyRequests,
+            StatusCode::SERVICE_UNAVAILABLE => Error::Busy,
+            _ => Error::Http {
                 status: status.as_u16(),
                 body,
-            });
-        }
+            },
+        };
+        Err(translated_error)
+    } else {
+        Ok(response)
     }
-    Ok(response)
 }
 
 /// We are only interessted in the status codes of the API.

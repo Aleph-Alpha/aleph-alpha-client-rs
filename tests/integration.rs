@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Client, TaskCompletion, Prompt, Sampling};
+use aleph_alpha_client::{Client, Prompt, Sampling, TaskCompletion};
 use lazy_static::lazy_static;
 
 lazy_static! {

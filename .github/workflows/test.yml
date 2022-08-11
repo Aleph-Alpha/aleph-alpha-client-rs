@@ -16,4 +16,6 @@ jobs:
     - name: Build
       run: cargo build
     - name: Run tests
+      env:
+        AA_API_TOKEN: ${{ secrets.AA_API_TOKEN }}
       run: cargo test

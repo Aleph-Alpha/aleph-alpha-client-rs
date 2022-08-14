@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+* Add `TaskSemanticEmbedding`.
+
 ## 0.2.0
 
 * Add `Error::Busy` to conviniently handle busy models.

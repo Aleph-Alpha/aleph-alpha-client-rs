@@ -38,7 +38,7 @@ async fn completion_with_luminous_base() {
     let model = "luminous-base";
 
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let response = client.complete(model, &task).await.unwrap();
+    let response = client.execute(model, &task).await.unwrap();
     let actual = response.completion;
 
     // Then
@@ -81,7 +81,7 @@ async fn detect_rate_limmiting() {
     let model = "luminous-base";
 
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let error = client.complete(model, &task).await.unwrap_err();
+    let error = client.execute(model, &task).await.unwrap_err();
 
     assert!(matches!(error, Error::TooManyRequests));
 }
@@ -127,7 +127,7 @@ async fn detect_queue_full() {
     let model = "luminous-base";
 
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let error = client.complete(model, &task).await.unwrap_err();
+    let error = client.execute(model, &task).await.unwrap_err();
 
     assert!(matches!(error, Error::Busy));
 }

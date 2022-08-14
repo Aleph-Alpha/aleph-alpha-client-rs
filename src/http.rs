@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
-use reqwest::{header, ClientBuilder, StatusCode};
-use serde::{Deserialize, Serialize};
+use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
+use serde::Deserialize;
 use thiserror::Error as ThisError;
 
-use crate::{Prompt, TaskCompletion};
+use crate::{completion::Completion, TaskCompletion};
 
 #[derive(ThisError, Debug)]
 pub enum Error {
@@ -28,6 +28,15 @@ pub enum Error {
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
     Other(#[from] reqwest::Error),
+}
+
+pub trait Task {
+    type Output;
+    type ResponseBody: for<'de> Deserialize<'de>;
+
+    fn build_request(&self, client: &reqwest::Client, base: &str, model: &str) -> RequestBuilder;
+
+    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
 }
 
 /// Sends HTTP request to the Aleph Alpha API
@@ -57,23 +66,24 @@ impl Client {
         Ok(Self { base: host, http })
     }
 
+    #[deprecated="Use execute instead"]
     pub async fn complete(
         &self,
         model: &str,
         task: &TaskCompletion<'_>,
     ) -> Result<Completion, Error> {
-        let body = BodyCompletion::new(model, task);
-        let response = self
-            .http
-            .post(format!("{}/complete", self.base))
-            .json(&body)
+        self.execute(model, task).await
+    }
+
+    pub async fn execute<T: Task>(&self, model: &str, task: &T) -> Result<T::Output, Error> {
+        let response = task
+            .build_request(&self.http, &self.base, model)
             .send()
             .await?;
-
         let response = translate_http_error(response).await?;
-
-        let mut answer: ResponseCompletion = response.json().await?;
-        Ok(answer.completions.pop().unwrap())
+        let response_body: T::ResponseBody = response.json().await?;
+        let answer = task.body_to_output(response_body);
+        Ok(answer)
     }
 }
 
@@ -107,60 +117,4 @@ struct ApiError<'a> {
     /// E.g. Differentiating between request rate limiting and parallel tasks limiting which both
     /// are 429 (the former is emmited by NGinx though).
     _code: Cow<'a, str>,
-}
-
-/// Body send to the Aleph Alpha API on the POST `/completion` Route
-#[derive(Serialize, Debug)]
-struct BodyCompletion<'a> {
-    /// Name of the model tasked with completing the prompt. E.g. `luminus-base`.
-    pub model: &'a str,
-    /// Prompt to complete. The modalities supported depend on `model`.
-    pub prompt: Prompt<'a>,
-    /// Limits the number of tokens, which are generated for the completion.
-    pub maximum_tokens: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<f64>,
-}
-
-impl<'a> BodyCompletion<'a> {
-    pub fn new(model: &'a str, task: &TaskCompletion<'a>) -> Self {
-        Self {
-            model,
-            prompt: task.prompt,
-            maximum_tokens: task.maximum_tokens,
-            temperature: task.sampling.temperature,
-            top_k: task.sampling.top_k,
-            top_p: task.sampling.top_p,
-        }
-    }
-}
-
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct ResponseCompletion {
-    pub model_version: String,
-    pub completions: Vec<Completion>,
-}
-
-impl ResponseCompletion {
-    /// The best completion in the answer.
-    pub fn best(&self) -> &Completion {
-        self.completions
-            .first()
-            .expect("Response is assumed to always have at least one completion")
-    }
-
-    /// Text of the best completion.
-    pub fn best_text(&self) -> &str {
-        &self.best().completion
-    }
-}
-
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct Completion {
-    pub completion: String,
-    pub finish_reason: String,
 }

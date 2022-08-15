@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
 * Add `TaskSemanticEmbedding`.
+* `Completion` renamed to `CompletionOutput`
 
 ## 0.2.0
 

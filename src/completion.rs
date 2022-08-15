@@ -74,12 +74,12 @@ impl<'a> BodyCompletion<'a> {
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct ResponseCompletion {
     pub model_version: String,
-    pub completions: Vec<Completion>,
+    pub completions: Vec<CompletionOutput>,
 }
 
 impl ResponseCompletion {
     /// The best completion in the answer.
-    pub fn best(&self) -> &Completion {
+    pub fn best(&self) -> &CompletionOutput {
         self.completions
             .first()
             .expect("Response is assumed to always have at least one completion")
@@ -91,14 +91,15 @@ impl ResponseCompletion {
     }
 }
 
+/// Completion and metainformation returned by a completion task
 #[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct Completion {
+pub struct CompletionOutput {
     pub completion: String,
     pub finish_reason: String,
 }
 
 impl Task for TaskCompletion<'_> {
-    type Output = Completion;
+    type Output = CompletionOutput;
 
     type ResponseBody = ResponseCompletion;
 

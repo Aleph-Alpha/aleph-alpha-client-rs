@@ -4,8 +4,9 @@ use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 
-use crate::{completion::Completion, TaskCompletion};
+use crate::{completion::CompletionOutput, TaskCompletion};
 
+/// Errors returned by the Aleph Alpha Client
 #[derive(ThisError, Debug)]
 pub enum Error {
     /// User exceeds his current Task Quota.
@@ -30,12 +31,19 @@ pub enum Error {
     Other(#[from] reqwest::Error),
 }
 
+/// A task send to the Aleph Alpha Api using the http client.
 pub trait Task {
+    /// Output returned by [`Client::execute`]
     type Output;
+
+    /// Expected answer of the Aleph Alpha API
     type ResponseBody: for<'de> Deserialize<'de>;
 
+    /// Prepare the request for the Aleph Alpha API. Authentication headers can be assumed to be
+    /// already set.
     fn build_request(&self, client: &reqwest::Client, base: &str, model: &str) -> RequestBuilder;
 
+    /// Parses the response of the server into higher level structs for the user.
     fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
 }
 
@@ -71,7 +79,7 @@ impl Client {
         &self,
         model: &str,
         task: &TaskCompletion<'_>,
-    ) -> Result<Completion, Error> {
+    ) -> Result<CompletionOutput, Error> {
         self.execute(model, task).await
     }
 

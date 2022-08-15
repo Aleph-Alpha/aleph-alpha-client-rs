@@ -42,7 +42,7 @@ async fn semanitc_search_with_luminous_base() {
         mushrooms, onions, olives, vegetables, meat, ham, etc.), which is then baked at a high \
         temperature, traditionally in a wood-fired oven.",
     );
-    let query = Prompt::from_text("I am hungry, any idea what I could eat?");
+    let query = Prompt::from_text("What is Pizza?");
     let client = Client::new(&AA_API_TOKEN).unwrap();
     let model = "luminous-base";
 
@@ -74,7 +74,7 @@ async fn semanitc_search_with_luminous_base() {
 
     // Then
 
-    // The fact about pizza should be more relevant to the "I'm hungry" question than a fact about
-    // robots.
+    // The fact about pizza should be more relevant to the "What is Pizza?" question than a fact
+    // about robots.
     assert!(similarity_pizza > similarity_robot);
 }

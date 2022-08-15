@@ -66,7 +66,7 @@ impl Client {
         Ok(Self { base: host, http })
     }
 
-    #[deprecated="Use execute instead"]
+    #[deprecated = "Use execute instead"]
     pub async fn complete(
         &self,
         model: &str,

@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{Prompt, http::Task};
+use crate::{http::Task, Prompt};
 
 /// Allows you to choose a semantic representation fitting for your usecase.
 #[derive(Serialize, Debug)]
@@ -51,17 +51,25 @@ struct RequestBody<'a> {
 
 /// Heap allocated embedding. Can hold full embeddings or compressed ones
 #[derive(Deserialize)]
-pub struct Embedding {
-    embedding: Vec<f32>,
+pub struct SemanticEmbeddingOutput {
+    pub embedding: Vec<f32>,
 }
 
 impl Task for TaskSemanticEmbedding<'_> {
-    type Output = Embedding;
+    type Output = SemanticEmbeddingOutput;
 
-    type ResponseBody = Embedding;
+    type ResponseBody = SemanticEmbeddingOutput;
 
-    fn build_request(&self, client: &reqwest::Client, base: &str, model: &str) -> reqwest::RequestBuilder {
-        let body = RequestBody { model, semantic_embedding_task: self};
+    fn build_request(
+        &self,
+        client: &reqwest::Client,
+        base: &str,
+        model: &str,
+    ) -> reqwest::RequestBuilder {
+        let body = RequestBody {
+            model,
+            semantic_embedding_task: self,
+        };
         client.post(format!("{}/semantic_embed", base)).json(&body)
     }
 

@@ -1,5 +1,5 @@
 use aleph_alpha_client::{
-    Client, Prompt, Sampling, SemanticRepresentation, TaskCompletion, TaskSemanticEmbedding,
+    Client, Prompt, Sampling, SemanticRepresentation, TaskCompletion, TaskSemanticEmbedding, cosine_similarity,
 };
 use lazy_static::lazy_static;
 
@@ -52,19 +52,29 @@ async fn semanitc_search_with_luminous_base() {
         representation: SemanticRepresentation::Document,
         compress_to_size: Some(128),
     };
-    let robot_embedding = client.execute(model, &robot_embedding_task).await.unwrap();
+    let robot_embedding = client.execute(model, &robot_embedding_task).await.unwrap().embedding;
 
     let pizza_embedding_task = TaskSemanticEmbedding {
         prompt: pizza_fact,
         representation: SemanticRepresentation::Document,
         compress_to_size: Some(128),
     };
-    let pizza_embedding = client.execute(model, &pizza_embedding_task).await.unwrap();
+    let pizza_embedding = client.execute(model, &pizza_embedding_task).await.unwrap().embedding;
 
     let query_embedding_task = TaskSemanticEmbedding {
         prompt: query,
         representation: SemanticRepresentation::Query,
         compress_to_size: Some(128),
     };
-    let query_embedding = client.execute(model, &query_embedding_task);
+    let query_embedding = client.execute(model, &query_embedding_task).await.unwrap().embedding;
+    let similarity_pizza = cosine_similarity(&query_embedding, &pizza_embedding);
+    println!("similarity pizza: {similarity_pizza}");
+    let similarity_robot = cosine_similarity(&query_embedding, &robot_embedding);
+    println!("similarity robot: {similarity_robot}");
+
+    // Then
+
+    // The fact about pizza should be more relevant to the "I'm hungry" question than a fact about
+    // robots.
+    assert!(similarity_pizza > similarity_robot);
 }

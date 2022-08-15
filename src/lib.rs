@@ -1,13 +1,13 @@
 use serde::Serialize;
 
 mod completion;
-mod semantic_embedding;
 mod http;
+mod semantic_embedding;
 
 pub use self::{
     completion::{Completion, Sampling, TaskCompletion},
-    semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
     http::{Client, Error},
+    semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
 };
 
 /// A prompt which is passed to the model for inference. Usually it is one text item, but it could
@@ -36,4 +36,12 @@ impl<'a> Modality<'a> {
     pub fn from_text(text: &'a str) -> Self {
         Modality::Text { data: text }
     }
+}
+
+pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+    let ab: f32 = a.iter().zip(b).map(|(a,b)| a * b).sum();
+    let aa: f32 = a.iter().map(|a| a * a).sum();
+    let bb: f32 = b.iter().map(|b| b * b).sum();
+    let prod_len = (aa * bb).sqrt();
+    ab / prod_len
 }

@@ -27,13 +27,11 @@ fn main() {
     };
     
     // Send the task to the client.
-    let response = client.complete(model, &task).await.unwrap();
+    let response = client.execute(model, &task).await.unwrap();
 
     // Print entire sentence with completion
     println!("The most important thing is{}", response.completion);
 }
 ```
 
-**Work in Progress**
-
-Currently the Rust client is not a priority on our Roadmap, so expect this client to be incomplete. If we work on it expect intefaces to break.
+This is a **work in progress** currently the Rust client is not a priority on our Roadmap, so expect this client to be incomplete. If we work on it expect intefaces to break.

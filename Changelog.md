@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+* Support for stop sequences
+
 ## 0.3.0
 
 * Add `TaskSemanticEmbedding`.

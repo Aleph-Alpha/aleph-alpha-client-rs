@@ -5,7 +5,7 @@ mod http;
 mod semantic_embedding;
 
 pub use self::{
-    completion::{CompletionOutput, Sampling, TaskCompletion},
+    completion::{CompletionOutput, Sampling, TaskCompletion, Stopping},
     http::{Client, Error, Task},
     semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
 };

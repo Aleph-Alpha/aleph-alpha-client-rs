@@ -1,2 +1,5 @@
+# Avoid commiting AA_API_TOKEN
+.env
+
 /target
 Cargo.lock

@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Client, Error, Prompt, Sampling, TaskCompletion};
+use aleph_alpha_client::{Client, Error, TaskCompletion};
 use wiremock::{
     matchers::{body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -29,14 +29,8 @@ async fn completion_with_luminous_base() {
         .await;
 
     // When
-    let task = TaskCompletion {
-        prompt: Prompt::from_text("Hello,"),
-        maximum_tokens: 1,
-        sampling: Sampling::MOST_LIKELY,
-    };
-
+    let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
-
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let response = client.execute(model, &task).await.unwrap();
     let actual = response.completion;
@@ -72,17 +66,12 @@ async fn detect_rate_limmiting() {
         .await;
 
     // When
-    let task = TaskCompletion {
-        prompt: Prompt::from_text("Hello,"),
-        maximum_tokens: 1,
-        sampling: Sampling::MOST_LIKELY,
-    };
-
+    let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
-
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client.execute(model, &task).await.unwrap_err();
 
+    // Then
     assert!(matches!(error, Error::TooManyRequests));
 }
 
@@ -118,14 +107,8 @@ async fn detect_queue_full() {
         .await;
 
     // When
-    let task = TaskCompletion {
-        prompt: Prompt::from_text("Hello,"),
-        maximum_tokens: 1,
-        sampling: Sampling::MOST_LIKELY,
-    };
-
+    let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
-
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client.execute(model, &task).await.unwrap_err();
 

@@ -2,6 +2,29 @@ use serde::{Deserialize, Serialize};
 
 use crate::{http::Task, Prompt};
 
+/// Completes a prompt. E.g. continues a text.
+pub struct TaskCompletion<'a> {
+    /// The prompt (usually text) to be completed. Unconditional completion can be started with an
+    /// empty string. The prompt may contain a zero shot or few shot task.
+    pub prompt: Prompt<'a>,
+    /// Controls in which circumstances the model will stop generating new tokens.
+    pub stopping: Stopping<'a>,
+    /// Sampling controls how the tokens ("words") are selected for the completion.
+    pub sampling: Sampling,
+}
+
+impl<'a> TaskCompletion<'a> {
+    /// Convinience constructor leaving most setting to default, just completing a given text and
+    /// taking the maximum anticipated length of the completion.
+    pub fn from_text(text: &'a str, maximum_tokens: u32) -> Self {
+        TaskCompletion {
+            prompt: Prompt::from_text(text),
+            stopping: Stopping::from_maximum_tokens(maximum_tokens),
+            sampling: Sampling::MOST_LIKELY,
+        }
+    }
+}
+
 /// Sampling controls how the tokens ("words") are selected for the completion.
 pub struct Sampling {
     /// A temperature encourages teh model to produce less probable outputs ("be more creative").
@@ -19,7 +42,8 @@ pub struct Sampling {
 }
 
 impl Sampling {
-    /// Always chooses the token most likely to come next.
+    /// Always chooses the token most likely to come next. Choose this if you do want close to
+    /// deterministic behaviour and do not want to apply any penalties to avoid repetitions.
     pub const MOST_LIKELY: Self = Sampling {
         temperature: None,
         top_k: None,
@@ -27,18 +51,27 @@ impl Sampling {
     };
 }
 
-/// Completes a prompt. E.g. continues a text.
-pub struct TaskCompletion<'a> {
-    /// The prompt (usually text) to be completed. Unconditional completion can be started with an
-    /// empty string. The prompt may contain a zero shot or few shot task.
-    pub prompt: Prompt<'a>,
+/// Controls the conditions under which the language models stops generating text.
+pub struct Stopping<'a> {
     /// The maximum number of tokens to be generated. Completion will terminate after the maximum
-    /// number of tokens is reachedIncrease this value to allow for longer outputs. A text is split
+    /// number of tokens is reached.Increase this value to allow for longer outputs. A text is split
     /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
     /// and maximum_tokens depends on the model.
     pub maximum_tokens: u32,
-    /// Sampling controls how the tokens ("words") are selected for the completion.
-    pub sampling: Sampling,
+    /// List of strings which will stop generation if they are generated. Stop sequences are
+    /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
+    /// lines starting with either "Question: " or "Answer: " (alternating). After producing an
+    /// answer, the model will be likely to generate "Question: ". "Question: " may therfore be used
+    /// as stop sequence in order not to have the model generate more questions but rather restrict
+    /// text generation to the answers.
+    pub stop_sequences: &'a [&'a str],
+}
+
+impl<'a> Stopping<'a> {
+    /// Only stop once the model generates end of text, or maximum tokens are reached.
+    pub fn from_maximum_tokens(maximum_tokens: u32) -> Self {
+        Self { maximum_tokens, stop_sequences: &[]}
+    }
 }
 
 /// Body send to the Aleph Alpha API on the POST `/completion` Route
@@ -50,6 +83,14 @@ struct BodyCompletion<'a> {
     pub prompt: Prompt<'a>,
     /// Limits the number of tokens, which are generated for the completion.
     pub maximum_tokens: u32,
+    /// List of strings which will stop generation if they are generated. Stop sequences are
+    /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
+    /// lines starting with either "Question: " or "Answer: " (alternating). After producing an
+    /// answer, the model will be likely to generate "Question: ". "Question: " may therfore be used
+    /// as stop sequence in order not to have the model generate more questions but rather restrict
+    /// text generation to the answers.
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
+    pub stop_sequences: &'a [&'a str],
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -63,7 +104,8 @@ impl<'a> BodyCompletion<'a> {
         Self {
             model,
             prompt: task.prompt,
-            maximum_tokens: task.maximum_tokens,
+            maximum_tokens: task.stopping.maximum_tokens,
+            stop_sequences: task.stopping.stop_sequences,
             temperature: task.sampling.temperature,
             top_k: task.sampling.top_k,
             top_p: task.sampling.top_p,

@@ -7,7 +7,8 @@ use lazy_static::lazy_static;
 
 lazy_static! {
     static ref AA_API_TOKEN: String = {
-        dotenv().unwrap();
+        // Use `.env` file if it exists
+        let _ = dotenv();
         std::env::var("AA_API_TOKEN")
             .expect("AA_API_TOKEN environment variable must be specified to run tests.")
     };

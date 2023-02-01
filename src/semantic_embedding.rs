@@ -70,7 +70,7 @@ impl Task for TaskSemanticEmbedding<'_> {
             model,
             semantic_embedding_task: self,
         };
-        client.post(format!("{}/semantic_embed", base)).json(&body)
+        client.post(format!("{base}/semantic_embed")).json(&body)
     }
 
     fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {

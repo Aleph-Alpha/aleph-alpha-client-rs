@@ -152,7 +152,7 @@ impl Task for TaskCompletion<'_> {
         model: &str,
     ) -> reqwest::RequestBuilder {
         let body = BodyCompletion::new(model, self);
-        client.post(format!("{}/complete", base)).json(&body)
+        client.post(format!("{base}/complete")).json(&body)
     }
 
     fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {

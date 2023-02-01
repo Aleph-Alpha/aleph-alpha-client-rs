@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+* Allow for `Prompt::from_text` to be called with `String` or any other type which implement `Into<Cow<'_, str>>`. This enables prompts to take ownership of their values which is practical for usecases there you want to return prompts from functions, which are based on locally generated strings.
+
 ## 0.4.0
 
 * Support for stop sequences

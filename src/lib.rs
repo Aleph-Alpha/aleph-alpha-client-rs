@@ -1,3 +1,5 @@
+use std::borrow::{Borrow, Cow};
+
 use serde::Serialize;
 
 mod completion;
@@ -5,46 +7,65 @@ mod http;
 mod semantic_embedding;
 
 pub use self::{
-    completion::{CompletionOutput, Sampling, TaskCompletion, Stopping},
+    completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     http::{Client, Error, Task},
     semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
 };
 
 /// A prompt which is passed to the model for inference. Usually it is one text item, but it could
 /// also be a combination of several modalities like images and text.
-#[derive(Serialize, Debug, Clone, Copy)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Prompt<'a>([Modality<'a>; 1]);
 
 impl<'a> Prompt<'a> {
     /// Create a prompt from a single text item.
-    pub fn from_text(text: &'a str) -> Self {
+    pub fn from_text(text: impl Into<Cow<'a, str>>) -> Self {
         Self([Modality::from_text(text)])
+    }
+
+    /// Allows you to borrow the contents of the prompt without allocating a new one.
+    pub fn borrow(&'a self) -> Prompt<'a> {
+        Self([self.0[0].borrow()])
     }
 }
 
 /// The prompt for models can be a combination of different modalities (Text and Image). The type of
 /// modalities which are supported depend on the Model in question.
-#[derive(Serialize, Debug, Clone, Copy)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Modality<'a> {
     /// The only type of prompt which can be used with pure language models
-    Text { data: &'a str },
+    Text { data: Cow<'a, str> },
 }
 
 impl<'a> Modality<'a> {
     /// Instantiates a text prompt
-    pub fn from_text(text: &'a str) -> Self {
-        Modality::Text { data: text }
+    pub fn from_text(text: impl Into<Cow<'a, str>>) -> Self {
+        Modality::Text { data: text.into() }
+    }
+
+    /// Create a semantically idetical entry of modality which borrows the contents of this one.
+    /// 
+    /// It is very practical to allow Modality of e.g. Text to take both ownership of the string it
+    /// contains as well as borrow a slice. However then we are creating a body from the user input
+    /// we want to avoid copying everything and needing to allocate for that modality again. This is
+    /// there this borrow function really shines.
+    pub fn borrow(&self) -> Modality<'_> {
+        match self {
+            Modality::Text { data } => Modality::Text {
+                data: Cow::Borrowed(data.borrow()),
+            },
+        }
     }
 }
 
 /// Intended to compare embeddings.
-/// 
+///
 /// ```no_run
 /// use aleph_alpha_client::{
 ///     Client, Prompt, TaskSemanticEmbedding, cosine_similarity, SemanticRepresentation
 /// };
-/// 
+///
 /// async fn semanitc_search_with_luminous_base(client: &Client) {
 ///     // Given
 ///     let robot_fact = Prompt::from_text(
@@ -95,9 +116,23 @@ impl<'a> Modality<'a> {
 /// }
 /// ```
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    let ab: f32 = a.iter().zip(b).map(|(a,b)| a * b).sum();
+    let ab: f32 = a.iter().zip(b).map(|(a, b)| a * b).sum();
     let aa: f32 = a.iter().map(|a| a * a).sum();
     let bb: f32 = b.iter().map(|b| b * b).sum();
     let prod_len = (aa * bb).sqrt();
     ab / prod_len
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Prompt;
+
+    #[test]
+    fn ability_to_generate_prompt_in_local_function() {
+        fn local_function() -> Prompt<'static> {
+            Prompt::from_text(String::from("My test prompt"))
+        }
+
+        assert_eq!(Prompt::from_text("My test prompt"), local_function())
+    }
 }

@@ -100,10 +100,10 @@ struct BodyCompletion<'a> {
 }
 
 impl<'a> BodyCompletion<'a> {
-    pub fn new(model: &'a str, task: &TaskCompletion<'a>) -> Self {
+    pub fn new(model: &'a str, task: &'a TaskCompletion<'a>) -> Self {
         Self {
             model,
-            prompt: task.prompt,
+            prompt: task.prompt.borrow(),
             maximum_tokens: task.stopping.maximum_tokens,
             stop_sequences: task.stopping.stop_sequences,
             temperature: task.sampling.temperature,

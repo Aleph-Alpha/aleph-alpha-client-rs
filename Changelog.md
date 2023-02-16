@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+* Removed deprecated function `Client::complete`. It has been replaced with `Client::execute`.
+* Intruduced `how` parameter to `Client::execute` in order to control wether the request has the nice flag set, or not.
+
 ## 0.4.1
 
 * Allow for `Prompt::from_text` to be called with `String` or any other type which implement `Into<Cow<'_, str>>`. This enables prompts to take ownership of their values which is practical for usecases there you want to return prompts from functions, which are based on locally generated strings.

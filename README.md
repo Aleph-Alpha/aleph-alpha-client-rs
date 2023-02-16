@@ -5,12 +5,12 @@ Interact with large language models provided by the Aleph Alpha API in Rust code
 ## Usage
 
 ```rust
-use aleph_alpha_client::{Client, TaskCompletion};
+use aleph_alpha_client::{Client, TaskCompletion, How};
 
 #[tokio::main]
 fn main() {
     // Authenticate against API. Fetches token.
-    let client = Client::new("AA_API_TOKEN").await;
+    let client = Client::new("AA_API_TOKEN").unwrap();
 
     // Name of the model we we want to use. Large models give usually better answer, but are also
     // more costly.
@@ -21,7 +21,7 @@ fn main() {
     let task = TaskCompletion::from_text("An apple a day", 10);
     
     // Send the task to the client.
-    let response = client.execute(model, &task).await.unwrap();
+    let response = client.execute(model, &task, &How::default()).await.unwrap();
 
     // Print entire sentence with completion
     println!("An apple a day{}", response.completion);

@@ -4,7 +4,7 @@ use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 
-use crate::{completion::CompletionOutput, How, TaskCompletion};
+use crate::How;
 
 /// Errors returned by the Aleph Alpha Client
 #[derive(ThisError, Debug)]
@@ -74,15 +74,31 @@ impl Client {
         Ok(Self { base: host, http })
     }
 
-    #[deprecated = "Use execute instead"]
-    pub async fn complete(
-        &self,
-        model: &str,
-        task: &TaskCompletion<'_>,
-    ) -> Result<CompletionOutput, Error> {
-        self.execute(model, task, &How::default()).await
-    }
-
+    /// Execute a task with the aleph alpha API and fetch its result.
+    /// 
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Error};
+    /// 
+    /// async fn print_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::new("AA_API_TOKEN")?;
+    /// 
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    /// 
+    ///     // The task we want to perform. Here we want to continue the sentence: "The most important thing
+    ///     // is ..."
+    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    /// 
+    ///     // Send the task to the client.
+    ///     let response = client.execute(model, &task, &How::default()).await?;
+    /// 
+    ///     // Print entire sentence with completion
+    ///     println!("An apple a day{}", response.completion);
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn execute<T: Task>(
         &self,
         model: &str,

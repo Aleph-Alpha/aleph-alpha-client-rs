@@ -142,10 +142,7 @@ async fn be_nice() {
         .execute(
             model,
             &task,
-            &How {
-                be_nice: true,
-                ..How::default()
-            },
+            &How { be_nice: true },
         )
         .await; // Drop result, answer is meaningless anyway
 

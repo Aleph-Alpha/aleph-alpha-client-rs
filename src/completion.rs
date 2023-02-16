@@ -70,7 +70,10 @@ pub struct Stopping<'a> {
 impl<'a> Stopping<'a> {
     /// Only stop once the model generates end of text, or maximum tokens are reached.
     pub fn from_maximum_tokens(maximum_tokens: u32) -> Self {
-        Self { maximum_tokens, stop_sequences: &[]}
+        Self {
+            maximum_tokens,
+            stop_sequences: &[],
+        }
     }
 }
 

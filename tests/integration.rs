@@ -1,6 +1,6 @@
 use aleph_alpha_client::{
-    cosine_similarity, Client, Prompt, SemanticRepresentation, TaskCompletion,
-    TaskSemanticEmbedding, Stopping, Sampling,
+    cosine_similarity, Client, How, Prompt, Sampling, SemanticRepresentation, Stopping,
+    TaskCompletion, TaskSemanticEmbedding,
 };
 use dotenv::dotenv;
 use lazy_static::lazy_static;
@@ -22,7 +22,7 @@ async fn completion_with_luminous_base() {
     let model = "luminous-base";
 
     let client = Client::new(&AA_API_TOKEN).unwrap();
-    let response = client.execute(model, &task).await.unwrap();
+    let response = client.execute(model, &task, &How::default()).await.unwrap();
 
     eprintln!("{}", response.completion);
 
@@ -55,7 +55,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let robot_embedding = client
-        .execute(model, &robot_embedding_task)
+        .execute(model, &robot_embedding_task, &How::default())
         .await
         .unwrap()
         .embedding;
@@ -66,7 +66,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let pizza_embedding = client
-        .execute(model, &pizza_embedding_task)
+        .execute(model, &pizza_embedding_task, &How::default())
         .await
         .unwrap()
         .embedding;
@@ -77,7 +77,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let query_embedding = client
-        .execute(model, &query_embedding_task)
+        .execute(model, &query_embedding_task, &How::default())
         .await
         .unwrap()
         .embedding;
@@ -100,14 +100,17 @@ async fn complete_structured_prompt() {
     let stop_sequences = ["User:"];
 
     // When
-    let task = TaskCompletion{
+    let task = TaskCompletion {
         prompt: Prompt::from_text(prompt),
-        stopping: Stopping { maximum_tokens: 64, stop_sequences: &stop_sequences[..] },
+        stopping: Stopping {
+            maximum_tokens: 64,
+            stop_sequences: &stop_sequences[..],
+        },
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
-    let response = client.execute(model, &task).await.unwrap();
+    let response = client.execute(model, &task, &How::default()).await.unwrap();
 
     // Then
     eprintln!("{}", response.completion);

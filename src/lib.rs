@@ -45,7 +45,7 @@ impl<'a> Modality<'a> {
     }
 
     /// Create a semantically idetical entry of modality which borrows the contents of this one.
-    /// 
+    ///
     /// It is very practical to allow Modality of e.g. Text to take both ownership of the string it
     /// contains as well as borrow a slice. However then we are creating a body from the user input
     /// we want to avoid copying everything and needing to allocate for that modality again. This is
@@ -59,11 +59,22 @@ impl<'a> Modality<'a> {
     }
 }
 
+/// Controls of how to execute a task
+#[derive(Clone, PartialEq, Eq, Hash, Default)]
+pub struct How {
+    /// Set this to `true` if you want to not put any load on the API in case it is already pretty
+    /// busy for the models you intend to use. All this does from the user perspective is that it
+    /// makes it more likely you get a `Busy` response from the server. One of the reasons you may
+    /// want to set is that you are an employee or associate of Aleph Alpha and want to perform
+    /// experiments without hurting paying customers.
+    pub be_nice: bool,
+}
+
 /// Intended to compare embeddings.
 ///
 /// ```no_run
 /// use aleph_alpha_client::{
-///     Client, Prompt, TaskSemanticEmbedding, cosine_similarity, SemanticRepresentation
+///     Client, Prompt, TaskSemanticEmbedding, cosine_similarity, SemanticRepresentation, How
 /// };
 ///
 /// async fn semanitc_search_with_luminous_base(client: &Client) {
@@ -81,6 +92,7 @@ impl<'a> Modality<'a> {
 ///     );
 ///     let query = Prompt::from_text("What is Pizza?");
 ///     let model = "luminous-base";
+///     let how = How::default();
 ///     
 ///     // When
 ///     let robot_embedding_task = TaskSemanticEmbedding {
@@ -88,21 +100,33 @@ impl<'a> Modality<'a> {
 ///         representation: SemanticRepresentation::Document,
 ///         compress_to_size: Some(128),
 ///     };
-///     let robot_embedding = client.execute(model, &robot_embedding_task).await.unwrap().embedding;
+///     let robot_embedding = client.execute(
+///         model,
+///         &robot_embedding_task,
+///         &how,
+///     ).await.unwrap().embedding;
 ///     
 ///     let pizza_embedding_task = TaskSemanticEmbedding {
 ///         prompt: pizza_fact,
 ///         representation: SemanticRepresentation::Document,
 ///         compress_to_size: Some(128),
 ///     };
-///     let pizza_embedding = client.execute(model, &pizza_embedding_task).await.unwrap().embedding;
+///     let pizza_embedding = client.execute(
+///         model,
+///         &pizza_embedding_task,
+///         &how,
+///     ).await.unwrap().embedding;
 ///     
 ///     let query_embedding_task = TaskSemanticEmbedding {
 ///         prompt: query,
 ///         representation: SemanticRepresentation::Query,
 ///         compress_to_size: Some(128),
 ///     };
-///     let query_embedding = client.execute(model, &query_embedding_task).await.unwrap().embedding;
+///     let query_embedding = client.execute(
+///         model,
+///         &query_embedding_task,
+///         &how,
+///     ).await.unwrap().embedding;
 ///     let similarity_pizza = cosine_similarity(&query_embedding, &pizza_embedding);
 ///     println!("similarity pizza: {similarity_pizza}");
 ///     let similarity_robot = cosine_similarity(&query_embedding, &robot_embedding);

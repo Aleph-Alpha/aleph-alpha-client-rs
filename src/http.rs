@@ -4,7 +4,7 @@ use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 
-use crate::{completion::CompletionOutput, TaskCompletion};
+use crate::{completion::CompletionOutput, How, TaskCompletion};
 
 /// Errors returned by the Aleph Alpha Client
 #[derive(ThisError, Debug)]
@@ -80,12 +80,25 @@ impl Client {
         model: &str,
         task: &TaskCompletion<'_>,
     ) -> Result<CompletionOutput, Error> {
-        self.execute(model, task).await
+        self.execute(model, task, &How::default()).await
     }
 
-    pub async fn execute<T: Task>(&self, model: &str, task: &T) -> Result<T::Output, Error> {
+    pub async fn execute<T: Task>(
+        &self,
+        model: &str,
+        task: &T,
+        how: &How,
+    ) -> Result<T::Output, Error> {
+        let How { be_nice } = how;
+        let query = if *be_nice {
+            [("nice", "true")].as_slice()
+        } else {
+            // nice=false is default, so we just ommit it.
+            [].as_slice()
+        };
         let response = task
             .build_request(&self.http, &self.base, model)
+            .query(query)
             .send()
             .await?;
         let response = translate_http_error(response).await?;

@@ -1,6 +1,6 @@
-use aleph_alpha_client::{Client, Error, TaskCompletion};
+use aleph_alpha_client::{Client, Error, How, TaskCompletion};
 use wiremock::{
-    matchers::{body_json_string, header, method, path},
+    matchers::{any, body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
 };
 
@@ -32,7 +32,7 @@ async fn completion_with_luminous_base() {
     let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let response = client.execute(model, &task).await.unwrap();
+    let response = client.execute(model, &task, &How::default()).await.unwrap();
     let actual = response.completion;
 
     // Then
@@ -69,7 +69,10 @@ async fn detect_rate_limmiting() {
     let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let error = client.execute(model, &task).await.unwrap_err();
+    let error = client
+        .execute(model, &task, &How::default())
+        .await
+        .unwrap_err();
 
     // Then
     assert!(matches!(error, Error::TooManyRequests));
@@ -110,7 +113,47 @@ async fn detect_queue_full() {
     let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let error = client.execute(model, &task).await.unwrap_err();
+    let error = client
+        .execute(model, &task, &How::default())
+        .await
+        .unwrap_err();
 
     assert!(matches!(error, Error::Busy));
+}
+
+/// Should set `nice=true` in query URL in order to tell the server we do not need our result right
+/// now in a high stress situation.
+#[tokio::test]
+async fn be_nice() {
+    // Given
+
+    // Start a background HTTP server on a random local part
+    let mock_server = MockServer::start().await;
+    // Just return an error for any request. We are not interssted in the answer for our test
+    // assertion. We only provide one, so we can await the result, and be sure something has been
+    // send.
+    Mock::given(any()).respond_with(ResponseTemplate::new(503));
+
+    // When
+    let task = TaskCompletion::from_text("Hello,", 1);
+    let model = "luminous-base";
+    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let _ = client
+        .execute(
+            model,
+            &task,
+            &How {
+                be_nice: true,
+                ..How::default()
+            },
+        )
+        .await; // Drop result, answer is meaningless anyway
+
+    // Then
+    let last_request = &mock_server.received_requests().await.unwrap()[0];
+    eprintln!("{last_request:?}");
+    assert!(last_request
+        .url
+        .query_pairs()
+        .any(|(k, v)| k == "nice" && v == "true"));
 }

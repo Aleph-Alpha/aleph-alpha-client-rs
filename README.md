@@ -16,11 +16,10 @@ fn main() {
     // more costly.
     let model = "luminous-base";
 
-    // The task we want to perform. Here we want to continue the sentence: "The most important thing
-    // is ..."
+    // The task we want to perform. Here we want to continue the sentence: "An apple a day ..."
     let task = TaskCompletion::from_text("An apple a day", 10);
     
-    // Send the task to the client.
+    // Retrieve the answer from the API
     let response = client.execute(model, &task, &How::default()).await.unwrap();
 
     // Print entire sentence with completion

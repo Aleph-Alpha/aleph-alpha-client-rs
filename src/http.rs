@@ -87,11 +87,11 @@ impl Client {
     ///     // also slower and more costly.
     ///     let model = "luminous-base";
     /// 
-    ///     // The task we want to perform. Here we want to continue the sentence: "The most important thing
-    ///     // is ..."
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
     ///     let task = TaskCompletion::from_text("An apple a day", 10);
     /// 
-    ///     // Send the task to the client.
+    ///     // Retrieve answer from API
     ///     let response = client.execute(model, &task, &How::default()).await?;
     /// 
     ///     // Print entire sentence with completion

@@ -4,7 +4,7 @@ version = "0.5.0"
 edition = "2021"
 description = "Interact with large language models provided by the Aleph Alpha API in Rust code"
 license = "MIT"
-keywords = ["ai", "aleph-alpha"]
+keywords = ["ai", "aleph-alpha", "llm"]
 categories = ["api-bindings"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -75,25 +75,25 @@ impl Client {
     }
 
     /// Execute a task with the aleph alpha API and fetch its result.
-    /// 
+    ///
     /// ```no_run
     /// use aleph_alpha_client::{Client, How, TaskCompletion, Error};
-    /// 
+    ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
     ///     let client = Client::new("AA_API_TOKEN")?;
-    /// 
+    ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
     ///     let model = "luminous-base";
-    /// 
+    ///
     ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
     ///     // ..."
     ///     let task = TaskCompletion::from_text("An apple a day", 10);
-    /// 
+    ///
     ///     // Retrieve answer from API
     ///     let response = client.execute(model, &task, &How::default()).await?;
-    /// 
+    ///
     ///     // Print entire sentence with completion
     ///     println!("An apple a day{}", response.completion);
     ///     Ok(())

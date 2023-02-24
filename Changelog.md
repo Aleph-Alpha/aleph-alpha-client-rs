@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+* Minimal support for sending multimodal prompts
+
 ## 0.5.0
 
 * Removed deprecated function `Client::complete`. It has been replaced with `Client::execute`.

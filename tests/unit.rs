@@ -138,13 +138,7 @@ async fn be_nice() {
     let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let _ = client
-        .execute(
-            model,
-            &task,
-            &How { be_nice: true },
-        )
-        .await; // Drop result, answer is meaningless anyway
+    let _ = client.execute(model, &task, &How { be_nice: true }).await; // Drop result, answer is meaningless anyway
 
     // Then
     let last_request = &mock_server.received_requests().await.unwrap()[0];

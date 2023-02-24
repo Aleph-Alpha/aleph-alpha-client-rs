@@ -1,5 +1,10 @@
-use std::borrow::{Borrow, Cow};
+use std::{
+    borrow::{Borrow, Cow},
+    io,
+    path::Path,
+};
 
+use base64::{prelude::BASE64_STANDARD, Engine};
 use serde::Serialize;
 
 mod completion;
@@ -15,17 +20,22 @@ pub use self::{
 /// A prompt which is passed to the model for inference. Usually it is one text item, but it could
 /// also be a combination of several modalities like images and text.
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
-pub struct Prompt<'a>([Modality<'a>; 1]);
+pub struct Prompt<'a>(Vec<Modality<'a>>);
 
 impl<'a> Prompt<'a> {
     /// Create a prompt from a single text item.
     pub fn from_text(text: impl Into<Cow<'a, str>>) -> Self {
-        Self([Modality::from_text(text)])
+        Self(vec![Modality::from_text(text)])
+    }
+
+    /// Create a multimodal prompt from a list of individual items with any modality.
+    pub fn from_vec(items: Vec<Modality<'a>>) -> Self {
+        Self(items)
     }
 
     /// Allows you to borrow the contents of the prompt without allocating a new one.
     pub fn borrow(&'a self) -> Prompt<'a> {
-        Self([self.0[0].borrow()])
+        Self(self.0.iter().map(|item| item.borrow()).collect())
     }
 }
 
@@ -36,12 +46,34 @@ impl<'a> Prompt<'a> {
 pub enum Modality<'a> {
     /// The only type of prompt which can be used with pure language models
     Text { data: Cow<'a, str> },
+    /// An image input into the model. See [`Modality::from_image`].
+    Image { data: Cow<'a, str> },
 }
 
 impl<'a> Modality<'a> {
     /// Instantiates a text prompt
     pub fn from_text(text: impl Into<Cow<'a, str>>) -> Self {
         Modality::Text { data: text.into() }
+    }
+
+    /// Image input for model, from file path.
+    ///
+    /// The model can only see squared pictures. Images are centercropped.
+    pub fn from_image_path(path: &Path) -> io::Result<Self> {
+        let image = std::fs::read(path)?;
+        Ok(Self::from_image_bytes(&image))
+    }
+
+    /// Generates an image input from the binary representation of the image.
+    ///
+    /// Using this constructor you must use a binary representation compatible with the API. Png is
+    /// guaranteed to be supported, and all others formats are converted into it. Furthermore, the
+    /// model can only look at square shaped pictures. If the picture is not square shaped it will
+    /// be center cropped.
+    fn from_image_bytes(image: &[u8]) -> Self {
+        Modality::Image {
+            data: BASE64_STANDARD.encode(image).into(),
+        }
     }
 
     /// Create a semantically idetical entry of modality which borrows the contents of this one.
@@ -53,6 +85,9 @@ impl<'a> Modality<'a> {
     pub fn borrow(&self) -> Modality<'_> {
         match self {
             Modality::Text { data } => Modality::Text {
+                data: Cow::Borrowed(data.borrow()),
+            },
+            Modality::Image { data } => Modality::Image {
                 data: Cow::Borrowed(data.borrow()),
             },
         }

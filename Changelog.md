@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3
+
+* Fix version number
+
 ## 0.5.2
 
 * Preprocess image on client side

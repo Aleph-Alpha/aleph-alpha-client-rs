@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2
+
+* Preprocess image on client side
+
 ## 0.5.1
 
 * Minimal support for sending multimodal prompts

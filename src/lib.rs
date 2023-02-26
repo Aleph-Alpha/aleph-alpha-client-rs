@@ -1,14 +1,15 @@
 use std::{
     borrow::{Borrow, Cow},
-    io,
     path::Path,
 };
 
 use base64::{prelude::BASE64_STANDARD, Engine};
+use image_preprocessing::LoadImageError;
 use serde::Serialize;
 
 mod completion;
 mod http;
+mod image_preprocessing;
 mod semantic_embedding;
 
 pub use self::{
@@ -59,9 +60,9 @@ impl<'a> Modality<'a> {
     /// Image input for model, from file path.
     ///
     /// The model can only see squared pictures. Images are centercropped.
-    pub fn from_image_path(path: &Path) -> io::Result<Self> {
-        let image = std::fs::read(path)?;
-        Ok(Self::from_image_bytes(&image))
+    pub fn from_image_path(path: &Path) -> Result<Self, LoadImageError> {
+        let bytes = image_preprocessing::from_image_path(path)?;
+        Ok(Self::from_image_bytes(&bytes))
     }
 
     /// Generates an image input from the binary representation of the image.

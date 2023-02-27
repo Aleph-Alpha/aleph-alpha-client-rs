@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4
+
+* `Modality::from_image_path` now works with string literals.
+
 ## 0.5.3
 
 * Fix version number

@@ -74,7 +74,7 @@ impl<'a> Prompt<'a> {
 pub enum Modality<'a> {
     /// The only type of prompt which can be used with pure language models
     Text { data: Cow<'a, str> },
-    /// An image input into the model. See [`Modality::from_image`].
+    /// An image input into the model. See [`Modality::from_image_path`].
     Image { data: Cow<'a, str> },
 }
 

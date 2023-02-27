@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use aleph_alpha_client::{
     cosine_similarity, Client, How, Modality, Prompt, Sampling, SemanticRepresentation, Stopping,
     TaskCompletion, TaskSemanticEmbedding,
@@ -123,12 +121,12 @@ async fn complete_structured_prompt() {
 #[tokio::test]
 async fn describe_image() {
     // Given
-    let path_to_image = PathBuf::from("tests/cat-chat-1641458.jpg");
+    let path_to_image = "tests/cat-chat-1641458.jpg";
 
     // When
     let task = TaskCompletion {
         prompt: Prompt::from_vec(vec![
-            Modality::from_image_path(&path_to_image).unwrap(),
+            Modality::from_image_path(path_to_image).unwrap(),
             Modality::from_text("A picture of "),
         ]),
         stopping: Stopping::from_maximum_tokens(10),

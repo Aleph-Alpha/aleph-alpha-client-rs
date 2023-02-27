@@ -60,8 +60,8 @@ impl<'a> Modality<'a> {
     /// Image input for model, from file path.
     ///
     /// The model can only see squared pictures. Images are centercropped.
-    pub fn from_image_path(path: &Path) -> Result<Self, LoadImageError> {
-        let bytes = image_preprocessing::from_image_path(path)?;
+    pub fn from_image_path(path: impl AsRef<Path>) -> Result<Self, LoadImageError> {
+        let bytes = image_preprocessing::from_image_path(path.as_ref())?;
         Ok(Self::from_image_bytes(&bytes))
     }
 

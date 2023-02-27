@@ -60,6 +60,36 @@ impl<'a> Modality<'a> {
     /// Image input for model, from file path.
     ///
     /// The model can only see squared pictures. Images are centercropped.
+    /// 
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, Modality, Prompt, Sampling, Stopping, TaskCompletion};
+    /// use dotenv::dotenv;
+    /// use std::path::PathBuf;
+    /// 
+    /// #[tokio::main(flavor = "current_thread")]
+    /// async fn main() {
+    ///     // Create client
+    ///     let _ = dotenv();
+    ///     let aa_api_token = std::env::var("AA_API_TOKEN")
+    ///         .expect("AA_API_TOKEN environment variable must be specified to run demo.");
+    ///     let client = Client::new(&aa_api_token).unwrap();
+    ///     // Define task
+    ///     let task = TaskCompletion {
+    ///         prompt: Prompt::from_vec(vec![
+    ///             Modality::from_image_path("cat.png").unwrap(),
+    ///             Modality::from_text("A picture of "),
+    ///         ]),
+    ///         stopping: Stopping::from_maximum_tokens(10),
+    ///         sampling: Sampling::MOST_LIKELY,
+    ///     };
+    ///     // Execute
+    ///     let model = "luminous-base";
+    ///     let client = Client::new(&aa_api_token).unwrap();
+    ///     let response = client.execute(model, &task, &How::default()).await.unwrap();
+    ///     // Show result
+    ///     println!("{}", response.completion);
+    /// }
+    /// ```
     pub fn from_image_path(path: impl AsRef<Path>) -> Result<Self, LoadImageError> {
         let bytes = image_preprocessing::from_image_path(path.as_ref())?;
         Ok(Self::from_image_bytes(&bytes))

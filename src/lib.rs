@@ -1,3 +1,30 @@
+//! Usage sample
+//!
+//! ```no_run
+//! use aleph_alpha_client::{Client, TaskCompletion, How};
+//! 
+//! #[tokio::main(flavor = "current_thread")]
+//! async fn main() {
+//!     // Authenticate against API. Fetches token.
+//!     let client = Client::new("AA_API_TOKEN").unwrap();
+//! 
+//!     // Name of the model we we want to use. Large models give usually better answer, but are also
+//!     // more costly.
+//!     let model = "luminous-base";
+//! 
+//!     // The task we want to perform. Here we want to continue the sentence: "An apple a day ..."
+//!     let task = TaskCompletion::from_text("An apple a day", 10);
+//!     
+//!     // Retrieve the answer from the API
+//!     let response = client.execute(model, &task, &How::default()).await.unwrap();
+//! 
+//!     // Print entire sentence with completion
+//!     println!("An apple a day{}", response.completion);
+//! }
+//! ```
+
+
+
 use std::{
     borrow::{Borrow, Cow},
     path::Path,

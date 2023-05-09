@@ -1,8 +1,11 @@
+use std::{fs::File, io::BufReader};
+
 use aleph_alpha_client::{
     cosine_similarity, Client, How, Modality, Prompt, Sampling, SemanticRepresentation, Stopping,
     TaskCompletion, TaskSemanticEmbedding,
 };
 use dotenv::dotenv;
+use image::ImageFormat;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -119,7 +122,7 @@ async fn complete_structured_prompt() {
 }
 
 #[tokio::test]
-async fn describe_image() {
+async fn describe_image_starting_from_a_path() {
     // Given
     let path_to_image = "tests/cat-chat-1641458.jpg";
 
@@ -127,6 +130,32 @@ async fn describe_image() {
     let task = TaskCompletion {
         prompt: Prompt::from_vec(vec![
             Modality::from_image_path(path_to_image).unwrap(),
+            Modality::from_text("A picture of "),
+        ]),
+        stopping: Stopping::from_maximum_tokens(10),
+        sampling: Sampling::MOST_LIKELY,
+    };
+    let model = "luminous-base";
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let response = client.execute(model, &task, &How::default()).await.unwrap();
+
+    // Then
+    eprintln!("{}", response.completion);
+    assert!(response.completion.contains("cat"))
+}
+
+#[tokio::test]
+async fn describe_image_starting_from_a_dyn_image() {
+    // Given
+    let path_to_image = "tests/cat-chat-1641458.jpg";
+    let file = BufReader::new(File::open(path_to_image).unwrap());
+    let format = ImageFormat::from_path(path_to_image).unwrap();
+    let image = image::load(file, format).unwrap();
+
+    // When
+    let task = TaskCompletion {
+        prompt: Prompt::from_vec(vec![
+            Modality::from_image(&image).unwrap(),
             Modality::from_text("A picture of "),
         ]),
         stopping: Stopping::from_maximum_tokens(10),

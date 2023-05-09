@@ -31,6 +31,7 @@ use std::{
 };
 
 use base64::{prelude::BASE64_STANDARD, Engine};
+use image::DynamicImage;
 use image_preprocessing::LoadImageError;
 use serde::Serialize;
 
@@ -119,6 +120,16 @@ impl<'a> Modality<'a> {
     /// ```
     pub fn from_image_path(path: impl AsRef<Path>) -> Result<Self, LoadImageError> {
         let bytes = image_preprocessing::from_image_path(path.as_ref())?;
+        Ok(Self::from_image_bytes(&bytes))
+    }
+
+    /// Image input for model
+    ///
+    /// The model can only see squared pictures. Images are centercropped. You may want to use this
+    /// method instead of [`Self::from_image_path`] in case you have the image in memory already
+    /// and do not want to load it from a file again.
+    pub fn from_image(image: &DynamicImage) -> Result<Self, LoadImageError> {
+        let bytes = image_preprocessing::preprocess_image(image);
         Ok(Self::from_image_bytes(&bytes))
     }
 

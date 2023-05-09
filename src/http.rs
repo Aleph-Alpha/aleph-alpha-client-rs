@@ -6,9 +6,31 @@ use thiserror::Error as ThisError;
 
 use crate::How;
 
-/// A task send to the Aleph Alpha Api using the http client.
+/// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
+/// for the Aleph Alpha API to specify its result. Notably it includes the model(s) the job is
+/// executed on. This allows this trait to hold in the presence of services, which use more than one
+/// model and task type to achieve their result. On the other hand a bare [`CompletionTask`] can not
+/// implement this trait directly, since its result would depend on what model is choosen to execute
+/// it. You can remidy this by turning completion task into a job, calling [`Task::with_model`].
+pub trait Job {
+    /// Output returned by [`Client::output_of`]
+    type Output;
+
+    /// Expected answer of the Aleph Alpha API
+    type ResponseBody: for<'de> Deserialize<'de>;
+
+    /// Prepare the request for the Aleph Alpha API. Authentication headers can be assumed to be
+    /// already set.
+    fn build_request(&self, client: &reqwest::Client, base: &str) -> RequestBuilder;
+
+    /// Parses the response of the server into higher level structs for the user.
+    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
+}
+
+/// A task send to the Aleph Alpha Api using the http client. Requires to specify a model before it
+/// can be executed.
 pub trait Task {
-    /// Output returned by [`Client::execute`]
+    /// Output returned by [`Client::output_of`]
     type Output;
 
     /// Expected answer of the Aleph Alpha API
@@ -20,6 +42,40 @@ pub trait Task {
 
     /// Parses the response of the server into higher level structs for the user.
     fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
+
+    /// Turn your task into [`Job`] by annotating it with a model name.
+    fn with_model<'a>(&'a self, model: &'a str) -> MethodJob<'a, Self>
+    where
+        Self: Sized,
+    {
+        MethodJob { model, task: self }
+    }
+}
+
+/// Enriches the `Task` to a `Job` by appending the model it should be executed with. Use this as
+/// input for [`Client::output_of`].
+pub struct MethodJob<'a, T> {
+    /// Name of the Aleph Alpha Model. E.g. "luminous-base".
+    pub model: &'a str,
+    /// Task to be executed against the model.
+    pub task: &'a T,
+}
+
+impl<'a, T> Job for MethodJob<'a, T>
+where
+    T: Task,
+{
+    type Output = T::Output;
+
+    type ResponseBody = T::ResponseBody;
+
+    fn build_request(&self, client: &reqwest::Client, base: &str) -> RequestBuilder {
+        self.task.build_request(client, base, self.model)
+    }
+
+    fn body_to_output(&self, response: T::ResponseBody) -> T::Output {
+        self.task.body_to_output(response)
+    }
 }
 
 /// Sends HTTP request to the Aleph Alpha API
@@ -74,12 +130,42 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
+    #[deprecated = "Please use result_of instead."]
     pub async fn execute<T: Task>(
         &self,
         model: &str,
         task: &T,
         how: &How,
     ) -> Result<T::Output, Error> {
+        self.result_of(&task.with_model(model), how).await
+    }
+
+    /// Execute a task with the aleph alpha API and fetch its result.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error};
+    ///
+    /// async fn print_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
+    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    ///
+    ///     // Retrieve answer from API
+    ///     let response = client.result_of(&task.with_model(model), &How::default()).await?;
+    ///
+    ///     // Print entire sentence with completion
+    ///     println!("An apple a day{}", response.completion);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn result_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
         let How { be_nice } = how;
         let query = if *be_nice {
             [("nice", "true")].as_slice()
@@ -88,7 +174,7 @@ impl Client {
             [].as_slice()
         };
         let response = task
-            .build_request(&self.http, &self.base, model)
+            .build_request(&self.http, &self.base)
             .query(query)
             .send()
             .await?;

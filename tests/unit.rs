@@ -1,4 +1,4 @@
-use aleph_alpha_client::{Client, Error, How, TaskCompletion};
+use aleph_alpha_client::{Client, Error, How, Task, TaskCompletion};
 use wiremock::{
     matchers::{any, body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -32,7 +32,10 @@ async fn completion_with_luminous_base() {
     let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let response = client.execute(model, &task, &How::default()).await.unwrap();
+    let response = client
+        .result_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
     let actual = response.completion;
 
     // Then
@@ -70,7 +73,7 @@ async fn detect_rate_limmiting() {
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
-        .execute(model, &task, &How::default())
+        .result_of(&task.with_model(model), &How::default())
         .await
         .unwrap_err();
 
@@ -114,7 +117,7 @@ async fn detect_queue_full() {
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
-        .execute(model, &task, &How::default())
+        .result_of(&task.with_model(model), &How::default())
         .await
         .unwrap_err();
 
@@ -138,7 +141,10 @@ async fn be_nice() {
     let task = TaskCompletion::from_text("Hello,", 1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
-    let _ = client.execute(model, &task, &How { be_nice: true }).await; // Drop result, answer is meaningless anyway
+    // Drop result, answer is meaningless anyway
+    let _ = client
+        .result_of(&task.with_model(model), &How { be_nice: true })
+        .await;
 
     // Then
     let last_request = &mock_server.received_requests().await.unwrap()[0];

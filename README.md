@@ -5,7 +5,7 @@ Interact with large language models provided by the Aleph Alpha API in Rust code
 ## Usage
 
 ```rust
-use aleph_alpha_client::{Client, TaskCompletion, How};
+use aleph_alpha_client::{Client, TaskCompletion, How, Task};
 
 #[tokio::main]
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
     let task = TaskCompletion::from_text("An apple a day", 10);
     
     // Retrieve the answer from the API
-    let response = client.execute(model, &task, &How::default()).await.unwrap();
+    let response = client.result_of(&task.with_model(model), &How::default()).await.unwrap();
 
     // Print entire sentence with completion
     println!("An apple a day{}", response.completion);

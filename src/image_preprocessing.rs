@@ -1,6 +1,13 @@
-use std::{cmp::min, io::{Cursor, self, BufReader}, path::Path, fs::File};
+use image::{
+    imageops::FilterType::CatmullRom, DynamicImage, GenericImageView, ImageError, ImageFormat,
+};
+use std::{
+    cmp::min,
+    fs::File,
+    io::{self, BufReader, Cursor},
+    path::Path,
+};
 use thiserror::Error as ThisError;
-use image::{imageops::FilterType::CatmullRom, DynamicImage, GenericImageView, ImageFormat, ImageError};
 
 /// Image is shrinked on the server side, before it is send to the model. We might as well save the
 /// bandwith and do it right away.

@@ -51,7 +51,6 @@ async fn semanitc_search_with_luminous_base() {
     );
     let query = Prompt::from_text("What is Pizza?");
     let client = Client::new(&AA_API_TOKEN).unwrap();
-    let model = "luminous-base";
 
     // When
     let robot_embedding_task = TaskSemanticEmbedding {
@@ -60,7 +59,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let robot_embedding = client
-        .output_of(&robot_embedding_task.with_model(model), &How::default())
+        .semantic_embedding(&robot_embedding_task, &How::default())
         .await
         .unwrap()
         .embedding;
@@ -71,7 +70,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let pizza_embedding = client
-        .output_of(&pizza_embedding_task.with_model(model), &How::default())
+        .semantic_embedding(&pizza_embedding_task, &How::default())
         .await
         .unwrap()
         .embedding;
@@ -82,7 +81,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let query_embedding = client
-        .output_of(&query_embedding_task.with_model(model), &How::default())
+        .semantic_embedding(&query_embedding_task, &How::default())
         .await
         .unwrap()
         .embedding;

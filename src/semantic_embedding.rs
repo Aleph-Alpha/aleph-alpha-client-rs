@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Prompt};
+use crate::{http::Task, Prompt, Job};
 
 /// Allows you to choose a semantic representation fitting for your usecase.
 #[derive(Serialize, Debug)]
@@ -44,6 +44,8 @@ pub struct TaskSemanticEmbedding<'a> {
 /// Appends model and hosting to the bare task
 #[derive(Serialize, Debug)]
 struct RequestBody<'a> {
+    /// Currently semantic embedding still requires a model parameter, even though "luminous-base"
+    /// is the only model to support it. This makes Semantic embedding both a Service and a Method.
     model: &'a str,
     #[serde(flatten)]
     semantic_embedding_task: &'a TaskSemanticEmbedding<'a>,
@@ -54,10 +56,9 @@ struct RequestBody<'a> {
 pub struct SemanticEmbeddingOutput {
     pub embedding: Vec<f32>,
 }
-//#[deprecated = "Semantic Embedding now implements Job directly because it does not need a specificaton of a model."]
+
 impl Task for TaskSemanticEmbedding<'_> {
     type Output = SemanticEmbeddingOutput;
-
     type ResponseBody = SemanticEmbeddingOutput;
 
     fn build_request(
@@ -66,6 +67,28 @@ impl Task for TaskSemanticEmbedding<'_> {
         base: &str,
         model: &str,
     ) -> reqwest::RequestBuilder {
+        let body = RequestBody {
+            model,
+            semantic_embedding_task: self,
+        };
+        client.post(format!("{base}/semantic_embed")).json(&body)
+    }
+
+    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+        response
+    }
+}
+
+impl Job for TaskSemanticEmbedding<'_> {
+    type Output = SemanticEmbeddingOutput;
+    type ResponseBody = SemanticEmbeddingOutput;
+
+    fn build_request(
+        &self,
+        client: &reqwest::Client,
+        base: &str,
+    ) -> reqwest::RequestBuilder {
+        let model = "luminous-base";
         let body = RequestBody {
             model,
             semantic_embedding_task: self,

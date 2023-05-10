@@ -30,6 +30,7 @@ mod prompt;
 mod semantic_embedding;
 
 use http::HttpClient;
+use semantic_embedding::SemanticEmbeddingOutput;
 
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
@@ -95,7 +96,27 @@ impl Client {
         self.output_of(&task.with_model(model), how).await
     }
 
-    /// Execute a task with the aleph alpha API and fetch its result.
+    /// Execute any task with the aleph alpha API and fetch its result. This is most usefull in
+    /// generic code then you want to execute arbitrary task types. Otherwise prefer methods taking
+    /// concrete tasks like [`Self::completion`] for improved readability.
+    pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
+        self.http_client.output_of(task, how).await
+    }
+
+    /// An embedding trying to capture the semantic meaning of a text. Cosine similarity can be used
+    /// find out how well two texts (or multimodal prompts) match. Useful for search usecases.
+    ///
+    /// See the example for [`cosine_similarity`].
+    pub async fn semantic_embedding(
+        &self,
+        task: &TaskSemanticEmbedding<'_>,
+        how: &How,
+    ) -> Result<SemanticEmbeddingOutput, Error> {
+        self.http_client.output_of(task, how).await
+    }
+
+    /// Instruct a model served by the aleph alpha API to continue writing a piece of text (or
+    /// multimodal document).
     ///
     /// ```no_run
     /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error};
@@ -113,15 +134,22 @@ impl Client {
     ///     let task = TaskCompletion::from_text("An apple a day", 10);
     ///
     ///     // Retrieve answer from API
-    ///     let response = client.output_of(&task.with_model(model), &How::default()).await?;
+    ///     let response = client.completion(&task, model, &How::default()).await?;
     ///
     ///     // Print entire sentence with completion
     ///     println!("An apple a day{}", response.completion);
     ///     Ok(())
     /// }
     /// ```
-    pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
-        self.http_client.output_of(task, how).await
+    pub async fn completion(
+        &self,
+        task: &TaskCompletion<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<CompletionOutput, Error> {
+        self.http_client
+            .output_of(&task.with_model(model), how)
+            .await
     }
 }
 
@@ -157,7 +185,6 @@ pub struct How {
 ///         temperature, traditionally in a wood-fired oven.",
 ///     );
 ///     let query = Prompt::from_text("What is Pizza?");
-///     let model = "luminous-base";
 ///     let how = How::default();
 ///     
 ///     // When
@@ -166,8 +193,7 @@ pub struct How {
 ///         representation: SemanticRepresentation::Document,
 ///         compress_to_size: Some(128),
 ///     };
-///     let robot_embedding = client.execute(
-///         model,
+///     let robot_embedding = client.semantic_embedding(
 ///         &robot_embedding_task,
 ///         &how,
 ///     ).await.unwrap().embedding;
@@ -177,8 +203,7 @@ pub struct How {
 ///         representation: SemanticRepresentation::Document,
 ///         compress_to_size: Some(128),
 ///     };
-///     let pizza_embedding = client.execute(
-///         model,
+///     let pizza_embedding = client.semantic_embedding(
 ///         &pizza_embedding_task,
 ///         &how,
 ///     ).await.unwrap().embedding;
@@ -188,8 +213,7 @@ pub struct How {
 ///         representation: SemanticRepresentation::Query,
 ///         compress_to_size: Some(128),
 ///     };
-///     let query_embedding = client.execute(
-///         model,
+///     let query_embedding = client.semantic_embedding(
 ///         &query_embedding_task,
 ///         &how,
 ///     ).await.unwrap().embedding;

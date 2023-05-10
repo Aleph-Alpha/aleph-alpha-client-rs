@@ -29,12 +29,101 @@ mod image_preprocessing;
 mod prompt;
 mod semantic_embedding;
 
+use http::HttpClient;
+
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
-    http::{Client, Error, Job, Task},
+    http::{Error, Job, Task},
     prompt::{Modality, Prompt},
     semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
 };
+
+/// Execute Jobs against the Aleph Alpha API
+pub struct Client {
+    /// This client does all the work of sending the requests and talking to the AA API. The only
+    /// additional knowledge added by this layer is that it knows about the individual jobs which
+    /// can be executed, which allows for an alternative non generic interface which might produce
+    /// easier to read code for the end user in many use cases.
+    http_client: HttpClient,
+}
+
+impl Client {
+    /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
+    pub fn new(api_token: &str) -> Result<Self, Error> {
+        Self::with_base_url("https://api.aleph-alpha.com".to_owned(), api_token)
+    }
+
+    /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet
+    /// you may want to use a different instances for testing.
+    pub fn with_base_url(host: String, api_token: &str) -> Result<Self, Error> {
+        let http_client = HttpClient::with_base_url(host, api_token)?;
+        Ok(Self { http_client })
+    }
+
+    /// Execute a task with the aleph alpha API and fetch its result.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Error};
+    ///
+    /// async fn print_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
+    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    ///
+    ///     // Retrieve answer from API
+    ///     let response = client.execute(model, &task, &How::default()).await?;
+    ///
+    ///     // Print entire sentence with completion
+    ///     println!("An apple a day{}", response.completion);
+    ///     Ok(())
+    /// }
+    /// ```
+    #[deprecated = "Please use output_of instead."]
+    pub async fn execute<T: Task>(
+        &self,
+        model: &str,
+        task: &T,
+        how: &How,
+    ) -> Result<T::Output, Error> {
+        self.output_of(&task.with_model(model), how).await
+    }
+
+    /// Execute a task with the aleph alpha API and fetch its result.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error};
+    ///
+    /// async fn print_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
+    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    ///
+    ///     // Retrieve answer from API
+    ///     let response = client.output_of(&task.with_model(model), &How::default()).await?;
+    ///
+    ///     // Print entire sentence with completion
+    ///     println!("An apple a day{}", response.completion);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
+        self.http_client.output_of(task, how).await
+    }
+}
 
 /// Controls of how to execute a task
 #[derive(Clone, PartialEq, Eq, Hash, Default)]

@@ -25,7 +25,7 @@ async fn completion_with_luminous_base() {
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
     let response = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap();
 
@@ -60,7 +60,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let robot_embedding = client
-        .result_of(&robot_embedding_task.with_model(model), &How::default())
+        .output_of(&robot_embedding_task.with_model(model), &How::default())
         .await
         .unwrap()
         .embedding;
@@ -71,7 +71,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let pizza_embedding = client
-        .result_of(&pizza_embedding_task.with_model(model), &How::default())
+        .output_of(&pizza_embedding_task.with_model(model), &How::default())
         .await
         .unwrap()
         .embedding;
@@ -82,7 +82,7 @@ async fn semanitc_search_with_luminous_base() {
         compress_to_size: Some(128),
     };
     let query_embedding = client
-        .result_of(&query_embedding_task.with_model(model), &How::default())
+        .output_of(&query_embedding_task.with_model(model), &How::default())
         .await
         .unwrap()
         .embedding;
@@ -116,7 +116,7 @@ async fn complete_structured_prompt() {
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
     let response = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap();
 
@@ -143,7 +143,7 @@ async fn describe_image_starting_from_a_path() {
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
     let response = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap();
 
@@ -172,7 +172,7 @@ async fn describe_image_starting_from_a_dyn_image() {
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
     let response = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap();
 

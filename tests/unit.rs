@@ -33,7 +33,7 @@ async fn completion_with_luminous_base() {
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let response = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap();
     let actual = response.completion;
@@ -73,7 +73,7 @@ async fn detect_rate_limmiting() {
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap_err();
 
@@ -117,7 +117,7 @@ async fn detect_queue_full() {
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
-        .result_of(&task.with_model(model), &How::default())
+        .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap_err();
 
@@ -143,7 +143,7 @@ async fn be_nice() {
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     // Drop result, answer is meaningless anyway
     let _ = client
-        .result_of(&task.with_model(model), &How { be_nice: true })
+        .output_of(&task.with_model(model), &How { be_nice: true })
         .await;
 
     // Then

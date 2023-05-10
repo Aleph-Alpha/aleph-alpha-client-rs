@@ -54,7 +54,7 @@ struct RequestBody<'a> {
 pub struct SemanticEmbeddingOutput {
     pub embedding: Vec<f32>,
 }
-
+//#[deprecated = "Semantic Embedding now implements Job directly because it does not need a specificaton of a model."]
 impl Task for TaskSemanticEmbedding<'_> {
     type Output = SemanticEmbeddingOutput;
 

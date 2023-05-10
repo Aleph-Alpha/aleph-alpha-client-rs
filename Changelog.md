@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+* Allow for executing `TaskSemanticEmbedding` without specifying models.
+
 ## 0.5.5
 
 * Support for processing images already in memory via `Modality::from_image`.

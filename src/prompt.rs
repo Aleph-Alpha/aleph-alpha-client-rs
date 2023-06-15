@@ -42,7 +42,7 @@ impl<'a> Prompt<'a> {
     /// This method will take an existing prompt and merge any consecutive prompt items
     /// by a given separator. You can use an empty string for the separator if you want
     /// to just concatenate them.
-    pub fn join_neighboring_text_items(&mut self, separator: &str) {
+    pub fn join_consecutive_text_items(&mut self, separator: &str) {
         self.0 = self
             .0
             .drain(..)
@@ -161,7 +161,7 @@ mod tests {
     fn can_concatenate_prompt_items() {
         let mut prompt =
             Prompt::from_vec(vec![Modality::from_text("foo"), Modality::from_text("bar")]);
-        prompt.join_neighboring_text_items("");
+        prompt.join_consecutive_text_items("");
 
         assert_eq!(prompt.0, vec![Modality::from_text("foobar")]);
     }
@@ -170,7 +170,7 @@ mod tests {
     fn can_concatenate_prompt_items_with_custom_separator() {
         let mut prompt =
             Prompt::from_vec(vec![Modality::from_text("foo"), Modality::from_text("bar")]);
-        prompt.join_neighboring_text_items("\n");
+        prompt.join_consecutive_text_items("\n");
 
         assert_eq!(prompt.0, vec![Modality::from_text("foo\nbar")]);
     }

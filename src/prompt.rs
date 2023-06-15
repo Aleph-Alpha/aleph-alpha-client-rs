@@ -5,6 +5,7 @@ use std::{
 
 use base64::{prelude::BASE64_STANDARD, Engine};
 use image::DynamicImage;
+use itertools::Itertools;
 use serde::Serialize;
 
 use crate::image_preprocessing::{self, LoadImageError};
@@ -28,6 +29,32 @@ impl<'a> Prompt<'a> {
     /// Allows you to borrow the contents of the prompt without allocating a new one.
     pub fn borrow(&'a self) -> Prompt<'a> {
         Self(self.0.iter().map(|item| item.borrow()).collect())
+    }
+
+    /// When constructing prompts programatically, it can be beneficial to append several
+    /// text items in a prompt. For example, if doing a fewshot prompt as the first item,
+    /// and user input as a second item.
+    ///
+    /// Howver, because of how tokenization works, having each item tokenized separately
+    /// can sometimes have strange side effects (tokenizing two partial strings doesn't
+    /// necessarily produce the same tokens as tokenizing the strings joined together).
+    ///
+    /// This method will take an existing prompt and merge any consecutive prompt items
+    /// by a given separator. You can use an empty string for the separator if you want
+    /// to just concatenate them.
+    pub fn join_neighboring_text_items(&mut self, separator: &str) {
+        self.0 = self
+            .0
+            .drain(..)
+            .coalesce(|a, b| match (a, b) {
+                (Modality::Text { mut data }, Modality::Text { data: other }) => {
+                    data.to_mut().push_str(separator);
+                    data.to_mut().push_str(&other);
+                    Ok(Modality::Text { data })
+                }
+                (a, b) => Err((a, b)),
+            })
+            .collect::<Vec<_>>();
     }
 }
 
@@ -123,5 +150,28 @@ impl<'a> Modality<'a> {
                 data: Cow::Borrowed(data.borrow()),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_concatenate_prompt_items() {
+        let mut prompt =
+            Prompt::from_vec(vec![Modality::from_text("foo"), Modality::from_text("bar")]);
+        prompt.join_neighboring_text_items("");
+
+        assert_eq!(prompt.0, vec![Modality::from_text("foobar")]);
+    }
+
+    #[test]
+    fn can_concatenate_prompt_items_with_custom_separator() {
+        let mut prompt =
+            Prompt::from_vec(vec![Modality::from_text("foo"), Modality::from_text("bar")]);
+        prompt.join_neighboring_text_items("\n");
+
+        assert_eq!(prompt.0, vec![Modality::from_text("foo\nbar")]);
     }
 }

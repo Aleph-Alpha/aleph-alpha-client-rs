@@ -2,7 +2,7 @@
 
 ## 0.5.7
 
-* Add new `Prompt` method `join_neighboring_text_items` to make it easier to construct fewshot prompts and other such use cases programatically, without introducing strange tokenization side-effects.
+* Add new `Prompt` method `join_consecutive_text_items` to make it easier to construct fewshot prompts and other such use cases programatically, without introducing strange tokenization side-effects.
 
 ## 0.5.6
 

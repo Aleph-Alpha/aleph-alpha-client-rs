@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Prompt, Job};
+use crate::{http::Task, Job, Prompt};
 
 /// Allows you to choose a semantic representation fitting for your usecase.
 #[derive(Serialize, Debug)]
@@ -83,11 +83,7 @@ impl Job for TaskSemanticEmbedding<'_> {
     type Output = SemanticEmbeddingOutput;
     type ResponseBody = SemanticEmbeddingOutput;
 
-    fn build_request(
-        &self,
-        client: &reqwest::Client,
-        base: &str,
-    ) -> reqwest::RequestBuilder {
+    fn build_request(&self, client: &reqwest::Client, base: &str) -> reqwest::RequestBuilder {
         let model = "luminous-base";
         let body = RequestBody {
             model,

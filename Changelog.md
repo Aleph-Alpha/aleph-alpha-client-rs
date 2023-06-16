@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+* Add `start_with_one_of` option to `Sampling`, to force the model to start a completion with one of several options.
+
 ## 0.5.7
 
 * Add new `Prompt` method `join_consecutive_text_items` to make it easier to construct fewshot prompts and other such use cases programatically, without introducing strange tokenization side-effects.

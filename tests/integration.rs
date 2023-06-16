@@ -179,3 +179,57 @@ async fn describe_image_starting_from_a_dyn_image() {
     eprintln!("{}", response.completion);
     assert!(response.completion.contains("cat"))
 }
+
+#[tokio::test]
+async fn only_answer_with_specific_animal() {
+    // Given
+    let prompt = Prompt::from_text("What is your favorite animal?");
+
+    // When
+    let task = TaskCompletion {
+        prompt,
+        stopping: Stopping::from_maximum_tokens(1),
+        sampling: Sampling {
+            start_with_one_of: &[" dog"],
+            ..Default::default()
+        },
+    };
+    let model = "luminous-base";
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    eprintln!("{}", response.completion);
+    assert_eq!(response.completion, " dog");
+}
+
+#[should_panic]
+#[tokio::test]
+async fn answer_should_continue() {
+    // Given
+    let prompt = Prompt::from_text("Knock knock. Who's there?");
+
+    // When
+    let task = TaskCompletion {
+        prompt,
+        stopping: Stopping::from_maximum_tokens(20),
+        sampling: Sampling {
+            start_with_one_of: &[" Says.", " Art.", " Weekend."],
+            ..Default::default()
+        },
+    };
+    let model = "luminous-base";
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    eprintln!("{}", response.completion);
+    assert!(response.completion.starts_with(" Says."));
+    assert!(response.completion.len() > " Says.".len());
+}

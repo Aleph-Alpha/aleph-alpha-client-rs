@@ -35,8 +35,8 @@ impl<'a> Prompt<'a> {
     /// text items in a prompt. For example, if doing a fewshot prompt as the first item,
     /// and user input as a second item.
     ///
-    /// Howver, because of how tokenization works, having each item tokenized separately
-    /// can sometimes have strange side effects (tokenizing two partial strings doesn't
+    /// However, because of how tokenization works, having each item tokenized separately
+    /// can sometimes have strange side effects (tokenizing two partial strings does not
     /// necessarily produce the same tokens as tokenizing the strings joined together).
     ///
     /// This method will take an existing prompt and merge any consecutive prompt items

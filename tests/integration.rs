@@ -1,8 +1,8 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, How, Modality, Prompt, Sampling, SemanticRepresentation, Stopping,
-    Task, TaskCompletion, TaskExplanation, TaskSemanticEmbedding,
+    cosine_similarity, Client, ExplanationScore, How, ItemExplanation, Modality, Prompt, Sampling,
+    SemanticRepresentation, Stopping, Task, TaskCompletion, TaskExplanation, TaskSemanticEmbedding,
 };
 use dotenv::dotenv;
 use image::ImageFormat;
@@ -128,9 +128,12 @@ async fn complete_structured_prompt() {
 #[tokio::test]
 async fn explain_request() {
     // Given
+    let input = "Hello World!";
+    let no_input_tokens = 3; // keep in sync with input
+    let target = " How is it going?";
     let task = TaskExplanation {
-        prompt: Prompt::from_text("hello"),
-        target: "target",
+        prompt: Prompt::from_text(input),
+        target,
     };
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
@@ -143,14 +146,20 @@ async fn explain_request() {
 
     // Then
     dbg!(&response);
+    assert_eq!(response.explanations.len(), 1); // single explanation for complete target
+    assert_eq!(response.explanations[0].target, target);
+    assert_eq!(response.explanations[0].items.len(), 2); // 1 text + 1 target
     assert_eq!(
-        response
-            .explanations
-            .into_iter()
-            .map(|explanation| explanation.target)
-            .collect::<Vec<_>>(),
-        vec!["target"]
-    );
+        explanation_scores(&response.explanations[0].items[0]).len(),
+        no_input_tokens
+    )
+}
+
+fn explanation_scores(item: &ItemExplanation) -> &Vec<ExplanationScore> {
+    match item {
+        ItemExplanation::Text { scores } => scores,
+        ItemExplanation::Target { scores } => scores,
+    }
 }
 
 #[tokio::test]

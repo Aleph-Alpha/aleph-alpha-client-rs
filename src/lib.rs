@@ -24,6 +24,7 @@
 //! ```
 
 mod completion;
+mod explanation;
 mod http;
 mod image_preprocessing;
 mod prompt;
@@ -34,6 +35,7 @@ use semantic_embedding::SemanticEmbeddingOutput;
 
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
+    explanation::{Explanation, ExplanationOutput, TaskExplanation},
     http::{Error, Job, Task},
     prompt::{Modality, Prompt},
     semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
@@ -151,6 +153,17 @@ impl Client {
             .output_of(&task.with_model(model), how)
             .await
     }
+
+    pub async fn explanation(
+        &self,
+        task: &TaskExplanation<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<ExplanationOutput, Error> {
+        self.http_client
+            .output_of(&task.with_model(model), how)
+            .await
+    }
 }
 
 /// Controls of how to execute a task
@@ -162,6 +175,12 @@ pub struct How {
     /// want to set is that you are an employee or associate of Aleph Alpha and want to perform
     /// experiments without hurting paying customers.
     pub be_nice: bool,
+}
+
+impl How {
+    pub fn be_nice(self) -> Self {
+        Self { be_nice: true }
+    }
 }
 
 /// Intended to compare embeddings.

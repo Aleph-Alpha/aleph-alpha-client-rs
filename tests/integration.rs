@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
     cosine_similarity, Client, How, Modality, Prompt, Sampling, SemanticRepresentation, Stopping,
-    Task, TaskCompletion, TaskSemanticEmbedding,
+    Task, TaskCompletion, TaskExplanation, TaskSemanticEmbedding,
 };
 use dotenv::dotenv;
 use image::ImageFormat;
@@ -123,6 +123,34 @@ async fn complete_structured_prompt() {
     eprintln!("{}", response.completion);
     assert!(!response.completion.is_empty());
     assert!(!response.completion.contains("User:"));
+}
+
+#[tokio::test]
+async fn explain_request() {
+    // Given
+    let task = TaskExplanation {
+        prompt: Prompt::from_text("hello"),
+        target: "target",
+    };
+    let model = "luminous-base";
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+
+    // When
+    let response = client
+        .explanation(&task, model, &How::default().be_nice())
+        .await
+        .unwrap();
+
+    // Then
+    dbg!(&response);
+    assert_eq!(
+        response
+            .explanations
+            .into_iter()
+            .map(|explanation| explanation.target)
+            .collect::<Vec<_>>(),
+        vec!["target"]
+    );
 }
 
 #[tokio::test]

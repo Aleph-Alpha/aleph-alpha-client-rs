@@ -14,7 +14,7 @@ pub struct TaskCompletion<'a> {
 }
 
 impl<'a> TaskCompletion<'a> {
-    /// Convinience constructor leaving most setting to default, just completing a given text and
+    /// Convenience constructor leaving most setting to default, just completing a given text and
     /// taking the maximum anticipated length of the completion.
     pub fn from_text(text: &'a str, maximum_tokens: u32) -> Self {
         TaskCompletion {
@@ -27,7 +27,7 @@ impl<'a> TaskCompletion<'a> {
 
 /// Sampling controls how the tokens ("words") are selected for the completion.
 pub struct Sampling<'a> {
-    /// A temperature encourages teh model to produce less probable outputs ("be more creative").
+    /// A temperature encourages the model to produce less probable outputs ("be more creative").
     /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
     /// response.
     pub temperature: Option<f64>,

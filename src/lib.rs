@@ -36,7 +36,8 @@ use semantic_embedding::SemanticEmbeddingOutput;
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     explanation::{
-        Explanation, ExplanationOutput, ExplanationScore, ItemExplanation, TaskExplanation,
+        Explanation, ExplanationOutput, ExplanationScore, ItemExplanation, PromptGranularity,
+        TaskExplanation,
     },
     http::{Error, Job, Task},
     prompt::{Modality, Prompt},

@@ -15,9 +15,20 @@ struct TaskExplanationBody<'a> {
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
+pub struct ResponseExplanation {
+    explanations: Vec<Explanation>,
+}
+#[derive(Debug, PartialEq)]
 pub struct ExplanationOutput {
-    pub model_version: String,
-    pub explanations: Vec<Explanation>,
+    pub explanation: Explanation,
+}
+
+impl ExplanationOutput {
+    fn from(mut response: ResponseExplanation) -> ExplanationOutput {
+        ExplanationOutput {
+            explanation: response.explanations.pop().unwrap(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -43,7 +54,7 @@ pub struct ExplanationScore {
 impl Task for TaskExplanation<'_> {
     type Output = ExplanationOutput;
 
-    type ResponseBody = ExplanationOutput;
+    type ResponseBody = ResponseExplanation;
 
     fn build_request(
         &self,
@@ -60,6 +71,6 @@ impl Task for TaskExplanation<'_> {
     }
 
     fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
-        response
+        ExplanationOutput::from(response)
     }
 }

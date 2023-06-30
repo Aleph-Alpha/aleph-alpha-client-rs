@@ -146,11 +146,10 @@ async fn explain_request() {
 
     // Then
     dbg!(&response);
-    assert_eq!(response.explanations.len(), 1); // single explanation for complete target
-    assert_eq!(response.explanations[0].target, target);
-    assert_eq!(response.explanations[0].items.len(), 2); // 1 text + 1 target
+    assert_eq!(response.explanation.target, target);
+    assert_eq!(response.explanation.items.len(), 2); // 1 text + 1 target
     assert_eq!(
-        explanation_scores(&response.explanations[0].items[0]).len(),
+        explanation_scores(&response.explanation.items[0]).len(),
         no_input_tokens
     )
 }

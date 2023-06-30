@@ -1,8 +1,9 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, ExplanationScore, How, ItemExplanation, Modality, Prompt, Sampling,
-    SemanticRepresentation, Stopping, Task, TaskCompletion, TaskExplanation, TaskSemanticEmbedding,
+    cosine_similarity, Client, ExplanationScore, How, ItemExplanation, Modality, Prompt,
+    PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task, TaskCompletion,
+    TaskExplanation, TaskSemanticEmbedding,
 };
 use dotenv::dotenv;
 use image::ImageFormat;
@@ -129,11 +130,12 @@ async fn complete_structured_prompt() {
 async fn explain_request() {
     // Given
     let input = "Hello World!";
-    let no_input_tokens = 3; // keep in sync with input
+    let num_input_sentences = 1; // keep in sync with input
     let target = " How is it going?";
     let task = TaskExplanation {
         prompt: Prompt::from_text(input),
         target,
+        prompt_granularity: &PromptGranularity::Sentence,
     };
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
@@ -150,7 +152,7 @@ async fn explain_request() {
     assert_eq!(response.explanation.items.len(), 2); // 1 text + 1 target
     assert_eq!(
         explanation_scores(&response.explanation.items[0]).len(),
-        no_input_tokens
+        num_input_sentences
     )
 }
 

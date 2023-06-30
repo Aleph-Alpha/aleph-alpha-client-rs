@@ -5,12 +5,22 @@ use crate::{Prompt, Task};
 pub struct TaskExplanation<'a> {
     pub prompt: Prompt<'a>,
     pub target: &'a str,
+    pub prompt_granularity: &'a PromptGranularity,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum PromptGranularity {
+    Word,
+    Sentence,
+    Paragraph,
 }
 
 #[derive(Serialize)]
 struct TaskExplanationBody<'a> {
     prompt: Prompt<'a>,
     target: &'a str,
+    prompt_granularity: &'a PromptGranularity,
     model: &'a str,
 }
 
@@ -66,6 +76,7 @@ impl Task for TaskExplanation<'_> {
             model,
             prompt: self.prompt.borrow(),
             target: self.target,
+            prompt_granularity: self.prompt_granularity,
         };
         client.post(format!("{base}/explain")).json(&body)
     }

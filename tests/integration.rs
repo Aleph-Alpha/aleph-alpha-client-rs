@@ -1,8 +1,8 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, ExplanationScore, How, ItemExplanation, Modality, Prompt,
-    PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task, TaskCompletion,
+    cosine_similarity, Client, ExplanationScore, Granularity, How, ItemExplanation, Modality,
+    Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task, TaskCompletion,
     TaskExplanation, TaskSemanticEmbedding,
 };
 use dotenv::dotenv;
@@ -135,7 +135,7 @@ async fn explain_request() {
     let task = TaskExplanation {
         prompt: Prompt::from_text(input),
         target,
-        prompt_granularity: &PromptGranularity::Sentence,
+        granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Sentence),
     };
     let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();

@@ -5,22 +5,44 @@ use crate::{Prompt, Task};
 pub struct TaskExplanation<'a> {
     pub prompt: Prompt<'a>,
     pub target: &'a str,
-    pub prompt_granularity: &'a PromptGranularity,
+    pub granularity: Granularity,
 }
 
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
+pub struct Granularity {
+    #[serde(skip_serializing_if = "PromptGranularity::is_auto")]
+    prompt: PromptGranularity,
+}
+
+impl Granularity {
+    pub fn with_prompt_granularity(self, prompt_granularity: PromptGranularity) -> Self {
+        Self {
+            prompt: prompt_granularity,
+        }
+    }
+}
+
+#[derive(Serialize, Copy, Clone, PartialEq, Default)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum PromptGranularity {
+    #[default]
+    Auto,
     Word,
     Sentence,
     Paragraph,
 }
 
+impl PromptGranularity {
+    fn is_auto(&self) -> bool {
+        self == &PromptGranularity::Auto
+    }
+}
+
 #[derive(Serialize)]
-struct TaskExplanationBody<'a> {
+struct BodyExplanation<'a> {
     prompt: Prompt<'a>,
     target: &'a str,
-    prompt_granularity: &'a PromptGranularity,
+    prompt_granularity: PromptGranularity,
     model: &'a str,
 }
 
@@ -72,11 +94,11 @@ impl Task for TaskExplanation<'_> {
         base: &str,
         model: &str,
     ) -> reqwest::RequestBuilder {
-        let body = TaskExplanationBody {
+        let body = BodyExplanation {
             model,
             prompt: self.prompt.borrow(),
             target: self.target,
-            prompt_granularity: self.prompt_granularity,
+            prompt_granularity: self.granularity.prompt,
         };
         client.post(format!("{base}/explain")).json(&body)
     }

@@ -56,9 +56,9 @@ pub enum ItemExplanation {
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct ExplanationScore {
-    start: u32,
-    length: u32,
-    score: f32,
+    pub start: u32,
+    pub length: u32,
+    pub score: f32,
 }
 
 impl Task for TaskExplanation<'_> {

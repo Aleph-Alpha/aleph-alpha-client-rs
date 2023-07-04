@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+* Add `explanation` to `Client` for submitting explanation requests to the API
+* Add `be_nice`-builder-method to `How` to make maintaining backwards compatibility easier
+
 ## 0.6.0
 
 * Add `start_with_one_of` option to `Sampling`, to force the model to start a completion with one of several options.

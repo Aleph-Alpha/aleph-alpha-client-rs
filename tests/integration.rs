@@ -1,9 +1,9 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, ExplanationScore, Granularity, How, ItemExplanation, Modality,
-    Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task, TaskCompletion,
-    TaskExplanation, TaskSemanticEmbedding,
+    cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Modality, Prompt,
+    PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task, TaskCompletion,
+    TaskExplanation, TaskSemanticEmbedding, TextScore,
 };
 use dotenv::dotenv;
 use image::ImageFormat;
@@ -137,29 +137,89 @@ async fn explain_request() {
         target,
         granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Sentence),
     };
-    let model = "luminous-base";
     let client = Client::new(&AA_API_TOKEN).unwrap();
 
     // When
     let response = client
-        .explanation(&task, model, &How::default().be_nice())
+        .explanation(&task, "luminous-base", &How::default().be_nice())
         .await
         .unwrap();
 
     // Then
-    dbg!(&response);
     assert_eq!(response.explanation.target, target);
     assert_eq!(response.explanation.items.len(), 2); // 1 text + 1 target
     assert_eq!(
-        explanation_scores(&response.explanation.items[0]).len(),
+        text_scores(&response.explanation.items[0]).len(),
         num_input_sentences
     )
 }
 
-fn explanation_scores(item: &ItemExplanation) -> &Vec<ExplanationScore> {
+#[tokio::test]
+async fn explain_request_with_auto_granularity() {
+    // Given
+    let input = "Hello World!";
+    let num_input_tokens = 3; // keep in sync with input
+    let task = TaskExplanation {
+        prompt: Prompt::from_text(input),
+        target: " How is it going?",
+        granularity: Granularity::default(),
+    };
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+
+    // When
+    let response = client
+        .explanation(&task, "luminous-base", &How::default().be_nice())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(
+        text_scores(&response.explanation.items[0]).len(),
+        num_input_tokens
+    )
+}
+
+#[tokio::test]
+async fn explain_request_with_image_modality() {
+    // Given
+    let input = Prompt::from_vec(vec![
+        Modality::from_image_path("tests/cat-chat-1641458.jpg").unwrap(),
+        Modality::from_text("A picture of "),
+    ]);
+    let num_input_images = 1; // keep in sync with input
+    let task = TaskExplanation {
+        prompt: input,
+        target: " a cat.",
+        granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Paragraph),
+    };
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+
+    // When
+    let response = client
+        .explanation(&task, "luminous-base", &How::default().be_nice())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(
+        image_scores(&response.explanation.items[0]).len(),
+        num_input_images
+    )
+}
+
+fn text_scores(item: &ItemExplanation) -> Vec<TextScore> {
     match item {
-        ItemExplanation::Text { scores } => scores,
-        ItemExplanation::Target { scores } => scores,
+        ItemExplanation::Text { scores } => scores.to_vec(),
+        ItemExplanation::Target { scores } => scores.to_vec(),
+        ItemExplanation::Image { .. } => Vec::new(),
+    }
+}
+
+fn image_scores(item: &ItemExplanation) -> Vec<ImageScore> {
+    match item {
+        ItemExplanation::Text { .. } => Vec::new(),
+        ItemExplanation::Target { .. } => Vec::new(),
+        ItemExplanation::Image { scores } => scores.to_vec(),
     }
 }
 

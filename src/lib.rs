@@ -36,8 +36,8 @@ use semantic_embedding::SemanticEmbeddingOutput;
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     explanation::{
-        Explanation, ExplanationOutput, ExplanationScore, Granularity, ItemExplanation,
-        PromptGranularity, TaskExplanation,
+        Explanation, ExplanationOutput, Granularity, ImageScore, ItemExplanation,
+        PromptGranularity, TaskExplanation, TextScore,
     },
     http::{Error, Job, Task},
     prompt::{Modality, Prompt},
@@ -157,6 +157,41 @@ impl Client {
             .await
     }
 
+    /// Returns an explanation given a prompt and a target (typically generated
+    /// by a previous completion request). The explanation describes how individual parts
+    /// of the prompt influenced individual parts of the target.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error, Granularity, TaskExplanation, Stopping, Prompt, Sampling};
+    ///
+    /// async fn print_explanation() -> Result<(), Error> {
+    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // input for the completion
+    ///     let prompt = Prompt::from_text("An apple a day");
+    ///
+    ///     let task = TaskCompletion {
+    ///         prompt: prompt.clone(),
+    ///         stopping: Stopping::from_maximum_tokens(10),
+    ///         sampling: Sampling::MOST_LIKELY,
+    ///     };
+    ///     let response = client.completion(&task, model, &How::default()).await?;
+    ///
+    ///     let task = TaskExplanation {
+    ///         prompt: prompt,               // same input as for completion
+    ///         target: &response.completion,  // output of completion
+    ///         granularity: Granularity::default(),
+    ///     };
+    ///     let response = client.explanation(&task, model, &How::default()).await?;
+    ///
+    ///     dbg!(&response);
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn explanation(
         &self,
         task: &TaskExplanation<'_>,
@@ -181,6 +216,7 @@ pub struct How {
 }
 
 impl How {
+    /// Returns a new [How] based on the given one with the [How::be_nice] flag being set.
     pub fn be_nice(self) -> Self {
         Self { be_nice: true }
     }

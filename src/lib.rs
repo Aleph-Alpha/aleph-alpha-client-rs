@@ -159,7 +159,7 @@ impl Client {
 
     /// Returns an explanation given a prompt and a target (typically generated
     /// by a previous completion request). The explanation describes how individual parts
-    /// of the prompt influenced individual parts of the target.
+    /// of the prompt influenced the target.
     ///
     /// ```no_run
     /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error, Granularity, TaskExplanation, Stopping, Prompt, Sampling};

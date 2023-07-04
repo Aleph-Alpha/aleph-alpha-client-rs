@@ -6,8 +6,8 @@ use crate::{Prompt, Task};
 pub struct TaskExplanation<'a> {
     /// The prompt that typically was the input of a previous completion request
     pub prompt: Prompt<'a>,
-    /// The target string that should be explained (i.e. influence of individual part
-    /// of the prompt should be indicated)
+    /// The target string that should be explained. The influence of individual parts
+    /// of the prompt for generating this target string will be indicated in the response.
     pub target: &'a str,
     /// Granularity paramaters for the explanation
     pub granularity: Granularity,
@@ -35,7 +35,7 @@ impl Granularity {
 /// If you choose, for example, [PromptGranularity::Sentence] then we report the importance score of each
 /// sentence in the prompt towards generating the target output.
 /// The default is [PromptGranularity::Auto] which means we will try to find the granularity that
-/// brings you closest to around 30 explanations. For large documents, this would likely
+/// brings you closest to around 30 explanations. For large prompts, this would likely
 /// be sentences. For short prompts this might be individual words or even tokens.
 #[derive(Serialize, Copy, Clone, PartialEq, Default)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -76,25 +76,21 @@ pub struct ResponseExplanation {
 /// The result of an explanation request.
 #[derive(Debug, PartialEq)]
 pub struct ExplanationOutput {
-    /// Since at the moment we only
-    /// support explaining the target as a whole the output only contains
-    /// a single [Explanation].
-    pub explanation: Explanation,
+    /// Explanation scores for different parts of the prompt or target.
+    pub items: Vec<ItemExplanation>,
 }
 
 impl ExplanationOutput {
     fn from(mut response: ResponseExplanation) -> ExplanationOutput {
         ExplanationOutput {
-            explanation: response.explanations.pop().unwrap(),
+            items: response.explanations.pop().unwrap().items,
         }
     }
 }
 
-/// The explanation for a specific part of the target.
+/// The explanation for the target.
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Explanation {
-    /// The part of the target that is explained
-    pub target: String,
     /// Explanation scores for different parts of the prompt or target.
     pub items: Vec<ItemExplanation>,
 }

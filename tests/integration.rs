@@ -131,10 +131,9 @@ async fn explain_request() {
     // Given
     let input = "Hello World!";
     let num_input_sentences = 1; // keep in sync with input
-    let target = " How is it going?";
     let task = TaskExplanation {
         prompt: Prompt::from_text(input),
-        target,
+        target: " How is it going?",
         granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Sentence),
     };
     let client = Client::new(&AA_API_TOKEN).unwrap();
@@ -146,12 +145,8 @@ async fn explain_request() {
         .unwrap();
 
     // Then
-    assert_eq!(response.explanation.target, target);
-    assert_eq!(response.explanation.items.len(), 2); // 1 text + 1 target
-    assert_eq!(
-        text_scores(&response.explanation.items[0]).len(),
-        num_input_sentences
-    )
+    assert_eq!(response.items.len(), 2); // 1 text + 1 target
+    assert_eq!(text_scores(&response.items[0]).len(), num_input_sentences)
 }
 
 #[tokio::test]
@@ -173,10 +168,7 @@ async fn explain_request_with_auto_granularity() {
         .unwrap();
 
     // Then
-    assert_eq!(
-        text_scores(&response.explanation.items[0]).len(),
-        num_input_tokens
-    )
+    assert_eq!(text_scores(&response.items[0]).len(), num_input_tokens)
 }
 
 #[tokio::test]
@@ -201,10 +193,7 @@ async fn explain_request_with_image_modality() {
         .unwrap();
 
     // Then
-    assert_eq!(
-        image_scores(&response.explanation.items[0]).len(),
-        num_input_images
-    )
+    assert_eq!(image_scores(&response.items[0]).len(), num_input_images)
 }
 
 fn text_scores(item: &ItemExplanation) -> Vec<TextScore> {

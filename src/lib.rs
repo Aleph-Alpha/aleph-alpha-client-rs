@@ -207,16 +207,29 @@ impl Client {
 }
 
 /// Controls of how to execute a task
-#[derive(Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct How {
     be_nice: bool,
     client_timeout: Duration,
 }
 
+impl Default for How {
+    fn default() -> Self {
+        // the aleph-alpha-api cancels request after 5 minute
+        let api_timeout = Duration::from_secs(300);
+        Self {
+            be_nice: Default::default(),
+            // on the client side a request can take longer in case of network errors
+            // therefore by default we wait slightly longer
+            client_timeout: api_timeout + Duration::from_secs(5),
+        }
+    }
+}
+
 impl How {
     /// The be-nice flag is used to reduce load for the models you intend to use.
-    /// This is commonly used if
-    /// you are conducting experiments or trying things out that create a large load on the server
+    /// This is commonly used if you are conducting experiments
+    /// or trying things out that create a large load on the aleph-alpha-api
     /// and you do not want to increase queue time for other users too much.
     ///
     /// (!) This increases how often you get a `Busy` response.

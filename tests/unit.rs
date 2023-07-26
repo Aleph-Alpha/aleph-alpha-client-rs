@@ -142,7 +142,13 @@ async fn be_nice() {
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     // Drop result, answer is meaningless anyway
     let _ = client
-        .output_of(&task.with_model(model), &How::default().be_nice())
+        .output_of(
+            &task.with_model(model),
+            &How {
+                be_nice: true,
+                ..Default::default()
+            },
+        )
         .await;
 
     // Then
@@ -168,7 +174,10 @@ async fn client_timeout() {
     let result = client
         .output_of(
             &TaskCompletion::from_text("Hello,", 1).with_model("any"),
-            &How::default().with_client_timeout(response_time / 2),
+            &How {
+                client_timeout: response_time / 2,
+                ..Default::default()
+            },
         )
         .await
         .unwrap_err();

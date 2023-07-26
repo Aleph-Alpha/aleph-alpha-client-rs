@@ -140,7 +140,14 @@ async fn explain_request() {
 
     // When
     let response = client
-        .explanation(&task, "luminous-base", &How::default().be_nice())
+        .explanation(
+            &task,
+            "luminous-base",
+            &How {
+                be_nice: true,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 
@@ -163,7 +170,14 @@ async fn explain_request_with_auto_granularity() {
 
     // When
     let response = client
-        .explanation(&task, "luminous-base", &How::default().be_nice())
+        .explanation(
+            &task,
+            "luminous-base",
+            &How {
+                be_nice: true,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 
@@ -188,7 +202,14 @@ async fn explain_request_with_image_modality() {
 
     // When
     let response = client
-        .explanation(&task, "luminous-base", &How::default().be_nice())
+        .explanation(
+            &task,
+            "luminous-base",
+            &How {
+                be_nice: true,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 

@@ -1,4 +1,7 @@
+use std::time::Duration;
+
 use aleph_alpha_client::{Client, Error, How, Task, TaskCompletion};
+use reqwest::StatusCode;
 use wiremock::{
     matchers::{any, body_json_string, header, method, path},
     Mock, MockServer, ResponseTemplate,
@@ -132,10 +135,6 @@ async fn be_nice() {
 
     // Start a background HTTP server on a random local part
     let mock_server = MockServer::start().await;
-    // Just return an error for any request. We are not interssted in the answer for our test
-    // assertion. We only provide one, so we can await the result, and be sure something has been
-    // send.
-    Mock::given(any()).respond_with(ResponseTemplate::new(503));
 
     // When
     let task = TaskCompletion::from_text("Hello,", 1);
@@ -143,14 +142,37 @@ async fn be_nice() {
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     // Drop result, answer is meaningless anyway
     let _ = client
-        .output_of(&task.with_model(model), &How { be_nice: true })
+        .output_of(&task.with_model(model), &How::default().be_nice())
         .await;
 
     // Then
     let last_request = &mock_server.received_requests().await.unwrap()[0];
-    eprintln!("{last_request:?}");
     assert!(last_request
         .url
         .query_pairs()
         .any(|(k, v)| k == "nice" && v == "true"));
+}
+
+#[tokio::test]
+async fn client_timeout() {
+    // Given
+    let mock_server = MockServer::start().await;
+    let response_time = Duration::from_millis(20);
+    Mock::given(any())
+        .respond_with(ResponseTemplate::new(StatusCode::OK).set_delay(response_time))
+        .mount(&mock_server)
+        .await;
+    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+
+    // When
+    let result = client
+        .output_of(
+            &TaskCompletion::from_text("Hello,", 1).with_model("any"),
+            &How::default().with_client_timeout(response_time / 2),
+        )
+        .await
+        .unwrap_err();
+
+    // Then
+    assert!(matches!(result, Error::ClientTimeout(..)));
 }

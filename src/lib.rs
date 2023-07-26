@@ -30,6 +30,8 @@ mod image_preprocessing;
 mod prompt;
 mod semantic_embedding;
 
+use std::time::Duration;
+
 use http::HttpClient;
 use semantic_embedding::SemanticEmbeddingOutput;
 
@@ -213,12 +215,26 @@ pub struct How {
     /// want to set is that you are an employee or associate of Aleph Alpha and want to perform
     /// experiments without hurting paying customers.
     pub be_nice: bool,
+    /// The maximum duration of a request before the client cancels the request. This is not passed on
+    /// to the server but only handled by the client locally, i.e. the client will not wait longer than
+    /// this duration for a response.
+    pub client_timeout: Duration,
 }
 
 impl How {
     /// Returns a new [How] based on the given one with the [How::be_nice] flag being set.
     pub fn be_nice(self) -> Self {
-        Self { be_nice: true }
+        Self {
+            be_nice: true,
+            ..self
+        }
+    }
+
+    pub fn with_client_timeout(self, client_timeout: Duration) -> Self {
+        Self {
+            client_timeout,
+            ..self
+        }
     }
 }
 

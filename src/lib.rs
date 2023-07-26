@@ -209,20 +209,17 @@ impl Client {
 /// Controls of how to execute a task
 #[derive(Clone, PartialEq, Eq, Hash, Default)]
 pub struct How {
-    /// Set this to `true` if you want to not put any load on the API in case it is already pretty
-    /// busy for the models you intend to use. All this does from the user perspective is that it
-    /// makes it more likely you get a `Busy` response from the server. One of the reasons you may
-    /// want to set is that you are an employee or associate of Aleph Alpha and want to perform
-    /// experiments without hurting paying customers.
-    pub be_nice: bool,
-    /// The maximum duration of a request before the client cancels the request. This is not passed on
-    /// to the server but only handled by the client locally, i.e. the client will not wait longer than
-    /// this duration for a response.
-    pub client_timeout: Duration,
+    be_nice: bool,
+    client_timeout: Duration,
 }
 
 impl How {
-    /// Returns a new [How] based on the given one with the [How::be_nice] flag being set.
+    /// The be-nice flag is used to reduce load for the models you intend to use.
+    /// This is commonly used if
+    /// you are conducting experiments or trying things out that create a large load on the server
+    /// and you do not want to increase queue time for other users too much.
+    ///
+    /// (!) This increases how often you get a `Busy` response.
     pub fn be_nice(self) -> Self {
         Self {
             be_nice: true,
@@ -230,6 +227,9 @@ impl How {
         }
     }
 
+    /// The maximum duration of a request before the client cancels the request. This is not passed on
+    /// to the server but only handled by the client locally, i.e. the client will not wait longer than
+    /// this duration for a response.
     pub fn with_client_timeout(self, client_timeout: Duration) -> Self {
         Self {
             client_timeout,

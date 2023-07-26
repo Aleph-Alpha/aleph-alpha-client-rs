@@ -209,8 +209,18 @@ impl Client {
 /// Controls of how to execute a task
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct How {
-    be_nice: bool,
-    client_timeout: Duration,
+    /// The be-nice flag is used to reduce load for the models you intend to use.
+    /// This is commonly used if you are conducting experiments
+    /// or trying things out that create a large load on the aleph-alpha-api
+    /// and you do not want to increase queue time for other users too much.
+    ///
+    /// (!) This increases how often you get a `Busy` response.
+    pub be_nice: bool,
+
+    /// The maximum duration of a request before the client cancels the request. This is not passed on
+    /// to the server but only handled by the client locally, i.e. the client will not wait longer than
+    /// this duration for a response.
+    pub client_timeout: Duration,
 }
 
 impl Default for How {
@@ -222,31 +232,6 @@ impl Default for How {
             // on the client side a request can take longer in case of network errors
             // therefore by default we wait slightly longer
             client_timeout: api_timeout + Duration::from_secs(5),
-        }
-    }
-}
-
-impl How {
-    /// The be-nice flag is used to reduce load for the models you intend to use.
-    /// This is commonly used if you are conducting experiments
-    /// or trying things out that create a large load on the aleph-alpha-api
-    /// and you do not want to increase queue time for other users too much.
-    ///
-    /// (!) This increases how often you get a `Busy` response.
-    pub fn be_nice(self) -> Self {
-        Self {
-            be_nice: true,
-            ..self
-        }
-    }
-
-    /// The maximum duration of a request before the client cancels the request. This is not passed on
-    /// to the server but only handled by the client locally, i.e. the client will not wait longer than
-    /// this duration for a response.
-    pub fn with_client_timeout(self, client_timeout: Duration) -> Self {
-        Self {
-            client_timeout,
-            ..self
         }
     }
 }

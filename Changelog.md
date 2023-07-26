@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+* Add `client_timeout` to `How`
+* Remove builder-methods from `How` as it introduced an unnecessary level of indirection
+
 ## 0.6.1
 
 * Add `explanation` to `Client` for submitting explanation requests to the API

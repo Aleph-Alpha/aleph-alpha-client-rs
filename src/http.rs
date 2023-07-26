@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, time::Duration};
 
 use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
 use serde::Deserialize;
@@ -127,8 +127,7 @@ impl HttpClient {
     /// }
     /// ```
     pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
-        let How { be_nice } = how;
-        let query = if *be_nice {
+        let query = if how.be_nice {
             [("nice", "true")].as_slice()
         } else {
             // nice=false is default, so we just ommit it.
@@ -137,8 +136,16 @@ impl HttpClient {
         let response = task
             .build_request(&self.http, &self.base)
             .query(query)
+            .timeout(how.client_timeout)
             .send()
-            .await?;
+            .await
+            .map_err(|reqwest_error| {
+                if reqwest_error.is_timeout() {
+                    Error::ClientTimeout(how.client_timeout)
+                } else {
+                    reqwest_error.into()
+                }
+            })?;
         let response = translate_http_error(response).await?;
         let response_body: T::ResponseBody = response.json().await?;
         let answer = task.body_to_output(response_body);
@@ -195,6 +202,8 @@ pub enum Error {
         welcome to retry your request any time."
     )]
     Busy,
+    #[error("No response received within given timeout: {0:?}")]
+    ClientTimeout(Duration),
     /// An error on the Http Protocl level.
     #[error("HTTP request failed with status code {}. Body:\n{}", status, body)]
     Http { status: u16, body: String },

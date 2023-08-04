@@ -33,7 +33,7 @@ mod semantic_embedding;
 use std::time::Duration;
 
 use http::HttpClient;
-use semantic_embedding::SemanticEmbeddingOutput;
+use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
@@ -43,7 +43,9 @@ pub use self::{
     },
     http::{Error, Job, Task},
     prompt::{Modality, Prompt},
-    semantic_embedding::{SemanticRepresentation, TaskSemanticEmbedding},
+    semantic_embedding::{
+        SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
+    },
 };
 
 /// Execute Jobs against the Aleph Alpha API
@@ -119,6 +121,15 @@ impl Client {
         task: &TaskSemanticEmbedding<'_>,
         how: &How,
     ) -> Result<SemanticEmbeddingOutput, Error> {
+        self.http_client.output_of(task, how).await
+    }
+
+    /// An batch of embeddings trying to capture the semantic meaning of a text.
+    pub async fn batch_semantic_embedding(
+        &self,
+        task: &TaskBatchSemanticEmbedding<'_>,
+        how: &How,
+    ) -> Result<BatchSemanticEmbeddingOutput, Error> {
         self.http_client.output_of(task, how).await
     }
 

@@ -2,8 +2,8 @@ use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
     cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Modality, Prompt,
-    PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task, TaskCompletion,
-    TaskExplanation, TaskSemanticEmbedding, TextScore,
+    PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
+    TaskBatchSemanticEmbedding, TaskCompletion, TaskExplanation, TaskSemanticEmbedding, TextScore,
 };
 use dotenv::dotenv;
 use image::ImageFormat;
@@ -340,4 +340,39 @@ async fn answer_should_continue() {
     eprintln!("{}", response.completion);
     assert!(response.completion.starts_with(" Says."));
     assert!(response.completion.len() > " Says.".len());
+}
+
+#[tokio::test]
+async fn batch_semanitc_embed_with_luminous_base() {
+    // Given
+    let robot_fact = Prompt::from_text(
+        "A robot is a machine—especially one programmable by a computer—capable of carrying out a \
+        complex series of actions automatically.",
+    );
+    let pizza_fact = Prompt::from_text(
+        "Pizza (Italian: [ˈpittsa], Neapolitan: [ˈpittsə]) is a dish of Italian origin consisting \
+        of a usually round, flat base of leavened wheat-based dough topped with tomatoes, cheese, \
+        and often various other ingredients (such as various types of sausage, anchovies, \
+        mushrooms, onions, olives, vegetables, meat, ham, etc.), which is then baked at a high \
+        temperature, traditionally in a wood-fired oven.",
+    );
+
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+
+    // When
+    let embedding_task = TaskBatchSemanticEmbedding {
+        prompts: vec![robot_fact, pizza_fact],
+        representation: SemanticRepresentation::Document,
+        compress_to_size: Some(128),
+    };
+
+    let embeddings = client
+        .batch_semantic_embedding(&embedding_task, &How::default())
+        .await
+        .unwrap()
+        .embeddings;
+
+    // Then
+    // There should be 2 embeddings
+    assert_eq!(embeddings.len(), 2);
 }

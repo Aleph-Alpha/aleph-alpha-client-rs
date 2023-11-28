@@ -3,7 +3,8 @@ use std::{fs::File, io::BufReader};
 use aleph_alpha_client::{
     cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Modality, Prompt,
     PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
-    TaskBatchSemanticEmbedding, TaskCompletion, TaskExplanation, TaskSemanticEmbedding, TextScore,
+    TaskBatchSemanticEmbedding, TaskCompletion, TaskDetokenization, TaskExplanation,
+    TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
 use dotenv::dotenv;
 use image::ImageFormat;
@@ -375,4 +376,60 @@ async fn batch_semanitc_embed_with_luminous_base() {
     // Then
     // There should be 2 embeddings
     assert_eq!(embeddings.len(), 2);
+}
+
+#[tokio::test]
+async fn tokenization_with_luminous_base() {
+    // Given
+    let input = "Hello, World!";
+
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+
+    // When
+    let task1 = TaskTokenization::new(input, false, true);
+    let task2 = TaskTokenization::new(input, true, false);
+
+    let response1 = client
+        .tokenize(&task1, "luminous-base", &How::default())
+        .await
+        .unwrap();
+
+    let response2 = client
+        .tokenize(&task2, "luminous-base", &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(response1.tokens, None);
+    assert_eq!(response1.token_ids, Some(vec![49222, 15, 5390, 4]));
+
+    assert_eq!(response2.token_ids, None);
+    assert_eq!(
+        response2.tokens,
+        Some(
+            vec!["ĠHello", ",", "ĠWorld", "!"]
+                .into_iter()
+                .map(str::to_owned)
+                .collect()
+        )
+    );
+}
+
+#[tokio::test]
+async fn detokenization_with_luminous_base() {
+    // Given
+    let input = vec![49222, 15, 5390, 4];
+
+    let client = Client::new(&AA_API_TOKEN).unwrap();
+
+    // When
+    let task = TaskDetokenization { token_ids: &input };
+
+    let response = client
+        .detokenize(&task, "luminous-base", &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert!(response.result.contains("Hello, World!"));
 }

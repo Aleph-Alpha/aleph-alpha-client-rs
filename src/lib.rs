@@ -24,11 +24,13 @@
 //! ```
 
 mod completion;
+mod detokenization;
 mod explanation;
 mod http;
 mod image_preprocessing;
 mod prompt;
 mod semantic_embedding;
+mod tokenization;
 
 use std::time::Duration;
 
@@ -37,6 +39,7 @@ use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
+    detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
         Explanation, ExplanationOutput, Granularity, ImageScore, ItemExplanation,
         PromptGranularity, TaskExplanation, TextScore,
@@ -46,6 +49,7 @@ pub use self::{
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
     },
+    tokenization::{TaskTokenization, TokenizationOutput},
 };
 
 /// Execute Jobs against the Aleph Alpha API
@@ -215,6 +219,76 @@ impl Client {
             .output_of(&task.with_model(model), how)
             .await
     }
+
+    /// Tokenize a prompt for a specific model.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, Error, How, TaskTokenization};
+    ///
+    /// async fn tokenize() -> Result<(), Error> {
+    ///     let client = Client::new(AA_API_TOKEN)?;
+    ///
+    ///     // Name of the model for which we want to tokenize text.
+    ///     let model = "luminous-base";
+    ///
+    ///     // Text prompt to be tokenized.
+    ///     let prompt = "An apple a day";
+    ///
+    ///     let task = TaskTokenization {
+    ///         prompt,
+    ///         tokens: true,       // return text-tokens
+    ///         token_ids: true,    // return numeric token-ids
+    ///     };
+    ///     let respones = client.tokenize(&task, model, &How::default()).await?;
+    ///
+    ///     dbg!(&respones);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn tokenize(
+        &self,
+        task: &TaskTokenization<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<TokenizationOutput, Error> {
+        self.http_client
+            .output_of(&task.with_model(model), how)
+            .await
+    }
+
+    /// Detokenize a list of token ids into a string.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, Error, How, TaskDetokenization};
+    ///
+    /// async fn detokenize() -> Result<(), Error> {
+    ///     let client = Client::new(AA_API_TOKEN)?;
+    ///
+    ///     // Specify the name of the model whose tokenizer was used to generate the input token ids.
+    ///     let model = "luminous-base";
+    ///
+    ///     // Token ids to convert into text.
+    ///     let token_ids: Vec<u32> = vec![556, 48741, 247, 2983];
+    ///
+    ///     let task = TaskDetokenization {
+    ///         token_ids: &token_ids,
+    ///     };
+    ///     let respones = client.detokenize(&task, model, &How::default()).await?;
+    ///
+    ///     dbg!(&respones);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn detokenize(
+        &self,
+        task: &TaskDetokenization<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<DetokenizationOutput, Error> {
+        self.http_client
+            .output_of(&task.with_model(model), how)
+            .await
+    }
 }
 
 /// Controls of how to execute a task
@@ -254,7 +328,7 @@ impl Default for How {
 ///     Client, Prompt, TaskSemanticEmbedding, cosine_similarity, SemanticRepresentation, How
 /// };
 ///
-/// async fn semanitc_search_with_luminous_base(client: &Client) {
+/// async fn semantic_search_with_luminous_base(client: &Client) {
 ///     // Given
 ///     let robot_fact = Prompt::from_text(
 ///         "A robot is a machine—especially one programmable by a computer—capable of carrying out a \

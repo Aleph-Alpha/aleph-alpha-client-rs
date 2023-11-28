@@ -76,7 +76,7 @@ pub struct Stopping<'a> {
     /// List of strings which will stop generation if they are generated. Stop sequences are
     /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
     /// lines starting with either "Question: " or "Answer: " (alternating). After producing an
-    /// answer, the model will be likely to generate "Question: ". "Question: " may therfore be used
+    /// answer, the model will be likely to generate "Question: ". "Question: " may therefore be used
     /// as stop sequence in order not to have the model generate more questions but rather restrict
     /// text generation to the answers.
     pub stop_sequences: &'a [&'a str],
@@ -95,7 +95,7 @@ impl<'a> Stopping<'a> {
 /// Body send to the Aleph Alpha API on the POST `/completion` Route
 #[derive(Serialize, Debug)]
 struct BodyCompletion<'a> {
-    /// Name of the model tasked with completing the prompt. E.g. `luminus-base`.
+    /// Name of the model tasked with completing the prompt. E.g. `luminous-base"`.
     pub model: &'a str,
     /// Prompt to complete. The modalities supported depend on `model`.
     pub prompt: Prompt<'a>,
@@ -104,7 +104,7 @@ struct BodyCompletion<'a> {
     /// List of strings which will stop generation if they are generated. Stop sequences are
     /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
     /// lines starting with either "Question: " or "Answer: " (alternating). After producing an
-    /// answer, the model will be likely to generate "Question: ". "Question: " may therfore be used
+    /// answer, the model will be likely to generate "Question: ". "Question: " may therefore be used
     /// as stop sequence in order not to have the model generate more questions but rather restrict
     /// text generation to the answers.
     #[serde(skip_serializing_if = "<[_]>::is_empty")]

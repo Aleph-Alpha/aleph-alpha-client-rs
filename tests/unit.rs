@@ -45,10 +45,10 @@ async fn completion_with_luminous_base() {
     assert_eq!("\n", actual)
 }
 
-/// If we open too many requests at once, we may trigger rate limmiting. We want this scenario to be
+/// If we open too many requests at once, we may trigger rate limiting. We want this scenario to be
 /// easily detectible by the user, so he/she/it can start sending requests slower.
 #[tokio::test]
-async fn detect_rate_limmiting() {
+async fn detect_rate_limiting() {
     // Given
 
     // Start a background HTTP server on a random local part
@@ -84,7 +84,7 @@ async fn detect_rate_limmiting() {
     assert!(matches!(error, Error::TooManyRequests));
 }
 
-/// Even if we do not open too many requests at once ourselfes, the API may just be busy. We also
+/// Even if we do not open too many requests at once ourselves, the API may just be busy. We also
 /// want this scenario to be easily detectable by users.
 #[tokio::test]
 async fn detect_queue_full() {

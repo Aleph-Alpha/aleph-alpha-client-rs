@@ -10,8 +10,8 @@ use crate::How;
 /// for the Aleph Alpha API to specify its result. Notably it includes the model(s) the job is
 /// executed on. This allows this trait to hold in the presence of services, which use more than one
 /// model and task type to achieve their result. On the other hand a bare [`crate::TaskCompletion`]
-/// can not implement this trait directly, since its result would depend on what model is choosen to
-/// execute it. You can remidy this by turning completion task into a job, calling
+/// can not implement this trait directly, since its result would depend on what model is chosen to
+/// execute it. You can remedy this by turning completion task into a job, calling
 /// [`Task::with_model`].
 pub trait Job {
     /// Output returned by [`crate::Client::output_of`]
@@ -130,7 +130,7 @@ impl HttpClient {
         let query = if how.be_nice {
             [("nice", "true")].as_slice()
         } else {
-            // nice=false is default, so we just ommit it.
+            // nice=false is default, so we just omit it.
             [].as_slice()
         };
         let response = task
@@ -156,7 +156,7 @@ impl HttpClient {
 async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Response, Error> {
     let status = response.status();
     if !status.is_success() {
-        // Store body in a variable, so we can use it, even if it is not an Error emmitted by
+        // Store body in a variable, so we can use it, even if it is not an Error emitted by
         // the API, but an intermediate Proxy like NGinx, so we can still forward the error
         // message.
         let body = response.text().await?;
@@ -174,14 +174,14 @@ async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Re
     }
 }
 
-/// We are only interessted in the status codes of the API.
+/// We are only interested in the status codes of the API.
 #[derive(Deserialize)]
 struct ApiError<'a> {
     /// Unique string in capital letters emitted by the API to signal different kinds of errors in a
-    /// finer granualrity then the HTTP status codes alone would allow for.
+    /// finer granularity then the HTTP status codes alone would allow for.
     ///
     /// E.g. Differentiating between request rate limiting and parallel tasks limiting which both
-    /// are 429 (the former is emmited by NGinx though).
+    /// are 429 (the former is emitted by NGinx though).
     _code: Cow<'a, str>,
 }
 
@@ -204,7 +204,7 @@ pub enum Error {
     Busy,
     #[error("No response received within given timeout: {0:?}")]
     ClientTimeout(Duration),
-    /// An error on the Http Protocl level.
+    /// An error on the Http Protocol level.
     #[error("HTTP request failed with status code {}. Body:\n{}", status, body)]
     Http { status: u16, body: String },
     /// Most likely either TLS errors creating the Client, or IO errors.

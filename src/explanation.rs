@@ -9,7 +9,7 @@ pub struct TaskExplanation<'a> {
     /// The target string that should be explained. The influence of individual parts
     /// of the prompt for generating this target string will be indicated in the response.
     pub target: &'a str,
-    /// Granularity paramaters for the explanation
+    /// Granularity parameters for the explanation
     pub granularity: Granularity,
 }
 

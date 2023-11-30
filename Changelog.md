@@ -20,7 +20,7 @@
 
 ## 0.5.7
 
-* Add new `Prompt` method `join_consecutive_text_items` to make it easier to construct fewshot prompts and other such use cases programatically, without introducing strange tokenization side-effects.
+* Add new `Prompt` method `join_consecutive_text_items` to make it easier to construct few shot prompts and other such use cases programmatically, without introducing strange tokenization side effects.
 
 ## 0.5.6
 
@@ -49,11 +49,11 @@
 ## 0.5.0
 
 * Removed deprecated function `Client::complete`. It has been replaced with `Client::execute`.
-* Intruduced `how` parameter to `Client::execute` in order to control wether the request has the nice flag set, or not.
+* Introduced `how` parameter to `Client::execute` in order to control whether the request has the nice flag set, or not.
 
 ## 0.4.1
 
-* Allow for `Prompt::from_text` to be called with `String` or any other type which implement `Into<Cow<'_, str>>`. This enables prompts to take ownership of their values which is practical for usecases there you want to return prompts from functions, which are based on locally generated strings.
+* Allow for `Prompt::from_text` to be called with `String` or any other type which implement `Into<Cow<'_, str>>`. This enables prompts to take ownership of their values which is practical for use cases there you want to return prompts from functions, which are based on locally generated strings.
 
 ## 0.4.0
 
@@ -66,7 +66,7 @@
 
 ## 0.2.0
 
-* Add `Error::Busy` to conviniently handle busy models.
+* Add `Error::Busy` to conveniently handle busy models.
 
 ## 0.1.1
 
@@ -74,4 +74,4 @@
 
 ## 0.1.0
 
-* Initial release allows for sending receiving simple (not all parameters of the http API are supported) completion requests.
+* Initial release allows for sending receiving simple (not all parameters of the HTTP API are supported) completion requests.

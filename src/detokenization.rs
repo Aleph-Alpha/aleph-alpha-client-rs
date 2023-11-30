@@ -46,7 +46,7 @@ impl<'a> Task for TaskDetokenization<'a> {
     ) -> reqwest::RequestBuilder {
         let body = BodyDetokenization {
             model,
-            token_ids: &self.token_ids,
+            token_ids: self.token_ids,
         };
         client.post(format!("{base}/detokenize")).json(&body)
     }

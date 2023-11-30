@@ -78,7 +78,7 @@ impl Task for TaskTokenization<'_> {
     ) -> reqwest::RequestBuilder {
         let body = BodyTokenization {
             model,
-            prompt: &self.prompt,
+            prompt: self.prompt,
             tokens: self.tokens,
             token_ids: self.token_ids,
         };

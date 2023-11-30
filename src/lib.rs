@@ -226,7 +226,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, Error, How, TaskTokenization};
     ///
     /// async fn tokenize() -> Result<(), Error> {
-    ///     let client = Client::new(AA_API_TOKEN)?;
+    ///     let client = Client::new("AA_API_TOKEN")?;
     ///
     ///     // Name of the model for which we want to tokenize text.
     ///     let model = "luminous-base";
@@ -262,7 +262,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, Error, How, TaskDetokenization};
     ///
     /// async fn detokenize() -> Result<(), Error> {
-    ///     let client = Client::new(AA_API_TOKEN)?;
+    ///     let client = Client::new("AA_API_TOKEN")?;
     ///
     ///     // Specify the name of the model whose tokenizer was used to generate the input token ids.
     ///     let model = "luminous-base";

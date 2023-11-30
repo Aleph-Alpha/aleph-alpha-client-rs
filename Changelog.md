@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+* Add `Client::tokenize` and `Client::detokenize`. Thanks to @andreaskoepf
+
 ## 0.7.0
 
 * Add `client_timeout` to `How`

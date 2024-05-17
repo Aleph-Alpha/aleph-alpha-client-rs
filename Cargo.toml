@@ -13,7 +13,7 @@ categories = ["api-bindings"]
 [dependencies]
 base64 = "0.22.0"
 image = "0.25.1"
-itertools = "0.12.1"
+itertools = "0.13.0"
 reqwest = { version = "0.12.3", features = ["json"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"

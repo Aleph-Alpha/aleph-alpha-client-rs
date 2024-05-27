@@ -160,9 +160,19 @@ async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Re
         // the API, but an intermediate Proxy like NGinx, so we can still forward the error
         // message.
         let body = response.text().await?;
+        // If the response is an error emitted by the API, this deserialization should succeed.
+        let api_error: Result<ApiError, _> = serde_json::from_str(&body);
         let translated_error = match status {
             StatusCode::TOO_MANY_REQUESTS => Error::TooManyRequests,
-            StatusCode::SERVICE_UNAVAILABLE => Error::Busy,
+            StatusCode::SERVICE_UNAVAILABLE => {
+                // Presence of `api_error` implies the error originated from the API itself (rather
+                // than the intermediate proxy) and so we can decode it as such.
+                if api_error.is_ok_and(|error| error.code == "QUEUE_FULL") {
+                    Error::Busy
+                } else {
+                    Error::Unavailable
+                }
+            }
             _ => Error::Http {
                 status: status.as_u16(),
                 body,
@@ -175,14 +185,14 @@ async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Re
 }
 
 /// We are only interested in the status codes of the API.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct ApiError<'a> {
     /// Unique string in capital letters emitted by the API to signal different kinds of errors in a
     /// finer granularity then the HTTP status codes alone would allow for.
     ///
     /// E.g. Differentiating between request rate limiting and parallel tasks limiting which both
     /// are 429 (the former is emitted by NGinx though).
-    _code: Cow<'a, str>,
+    code: Cow<'a, str>,
 }
 
 /// Errors returned by the Aleph Alpha Client
@@ -202,6 +212,12 @@ pub enum Error {
         welcome to retry your request any time."
     )]
     Busy,
+    /// The API itself is unavailable, most likely due to restart.
+    #[error(
+        "The service is currently unavailable. This is likely due to restart. Please try again \
+        later."
+    )]
+    Unavailable,
     #[error("No response received within given timeout: {0:?}")]
     ClientTimeout(Duration),
     /// An error on the Http Protocol level.

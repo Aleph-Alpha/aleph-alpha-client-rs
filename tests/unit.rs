@@ -93,12 +93,12 @@ async fn detect_queue_full() {
     // Start a background HTTP server on a random local part
     let mock_server = MockServer::start().await;
 
-    let answer = r#"{
-        "error":"Sorry we had to reject your request because we could not guarantee to finish it in
-            a reasonable timeframe. This specific model is very busy at this moment. Try again later
-            or use another model.",
-        "code":"QUEUE_FULL"
-    }"#;
+    let answer = "{
+        \"error\":\"Sorry we had to reject your request because we could not guarantee to finish \
+            it in a reasonable timeframe. This specific model is very busy at this moment. Try \
+            again later or use another model.\",
+        \"code\":\"QUEUE_FULL\"
+    }";
     let body = r#"{
         "model": "luminous-base",
         "prompt": [{"type": "text", "data": "Hello,"}],
@@ -124,7 +124,45 @@ async fn detect_queue_full() {
         .await
         .unwrap_err();
 
+    // Then
     assert!(matches!(error, Error::Busy));
+}
+
+/// If the API is down, we want to detect this scenario and inform the user.
+#[tokio::test]
+async fn detect_service_unavailable() {
+    // Given
+
+    // Start a background HTTP server on a random local part
+    let mock_server = MockServer::start().await;
+
+    let answer = "No server is available to handle this request.";
+    let body = r#"{
+        "model": "luminous-base",
+        "prompt": [{"type": "text", "data": "Hello,"}],
+        "maximum_tokens": 1
+    }"#;
+
+    Mock::given(method("POST"))
+        .and(path("/complete"))
+        .and(header("Authorization", "Bearer dummy-token"))
+        .and(header("Content-Type", "application/json"))
+        .and(body_json_string(body))
+        .respond_with(ResponseTemplate::new(503).set_body_string(answer))
+        .mount(&mock_server)
+        .await;
+
+    // When
+    let task = TaskCompletion::from_text("Hello,", 1);
+    let model = "luminous-base";
+    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let error = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap_err();
+
+    // Then
+    assert!(matches!(error, Error::Unavailable));
 }
 
 /// Should set `nice=true` in query URL in order to tell the server we do not need our result right

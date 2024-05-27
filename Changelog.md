@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Add `Error::Unavailable` to decouple service unavailability from 'queue full' 503 responses.
+
 ## 0.7.1
 
 * Add `Client::tokenize` and `Client::detokenize`. Thanks to @andreaskoepf

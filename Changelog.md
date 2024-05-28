@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.8.0
+
 * Add `Error::Unavailable` to decouple service unavailability from 'queue full' 503 responses.
 
 ## 0.7.1

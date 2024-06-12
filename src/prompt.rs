@@ -80,7 +80,7 @@ impl<'a> Modality<'a> {
     /// The model can only see squared pictures. Images are centercropped.
     ///
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, Modality, Prompt, Sampling, Stopping, TaskCompletion};
+    /// use aleph_alpha_client::{Client, How, Modality, Prompt, Sampling, Stopping, TaskCompletion, Task};
     /// use dotenv::dotenv;
     /// use std::path::PathBuf;
     ///
@@ -102,8 +102,8 @@ impl<'a> Modality<'a> {
     ///     };
     ///     // Execute
     ///     let model = "luminous-base";
-    ///     let client = Client::new(&aa_api_token).unwrap();
-    ///     let response = client.execute(model, &task, &How::default()).await.unwrap();
+    ///     let job = task.with_model(model);
+    ///     let response = client.output_of(&job, &How::default()).await.unwrap();
     ///     // Show result
     ///     println!("{}", response.completion);
     /// }

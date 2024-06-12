@@ -16,7 +16,7 @@
 //!     let task = TaskCompletion::from_text("An apple a day", 10);
 //!     
 //!     // Retrieve the answer from the API
-//!     let response = client.execute(model, &task, &How::default()).await.unwrap();
+//!     let response = client.completion(&task, model, &How::default()).await.unwrap();
 //!
 //!     // Print entire sentence with completion
 //!     println!("An apple a day{}", response.completion);

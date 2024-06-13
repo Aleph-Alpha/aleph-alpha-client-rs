@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.9.0
+
+* Add `How::api_token` to allow specifying API tokens for individual requests.
+
 ## 0.8.0
 
 * Add `Error::Unavailable` to decouple service unavailability from 'queue full' 503 responses.

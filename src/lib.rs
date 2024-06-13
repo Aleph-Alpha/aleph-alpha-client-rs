@@ -306,6 +306,10 @@ pub struct How {
     /// to the server but only handled by the client locally, i.e. the client will not wait longer than
     /// this duration for a response.
     pub client_timeout: Duration,
+
+    /// API token used to authenticate the request, overwrites the default token provided on setup
+    /// Default token may not provide the tracking or permission that is wanted for the request
+    pub api_token: Option<String>,
 }
 
 impl Default for How {
@@ -317,6 +321,7 @@ impl Default for How {
             // on the client side a request can take longer in case of network errors
             // therefore by default we wait slightly longer
             client_timeout: api_timeout + Duration::from_secs(5),
+            api_token: None,
         }
     }
 }

@@ -83,22 +83,20 @@ where
 pub struct HttpClient {
     base: String,
     http: reqwest::Client,
+    api_token: String,
 }
 
 impl HttpClient {
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet you
     /// may want to use a different instances for testing.
     pub fn with_base_url(host: String, api_token: &str) -> Result<Self, Error> {
-        let mut headers = header::HeaderMap::new();
+        let http = ClientBuilder::new().build()?;
 
-        let mut auth_value = header::HeaderValue::from_str(&format!("Bearer {api_token}")).unwrap();
-        // Consider marking security-sensitive headers with `set_sensitive`.
-        auth_value.set_sensitive(true);
-        headers.insert(header::AUTHORIZATION, auth_value);
-
-        let http = ClientBuilder::new().default_headers(headers).build()?;
-
-        Ok(Self { base: host, http })
+        Ok(Self {
+            base: host,
+            http,
+            api_token: api_token.to_owned(),
+        })
     }
 
     /// Execute a task with the aleph alpha API and fetch its result.
@@ -133,9 +131,12 @@ impl HttpClient {
             // nice=false is default, so we just omit it.
             [].as_slice()
         };
+
+        let api_token = how.api_token.as_ref().unwrap_or(&self.api_token);
         let response = task
             .build_request(&self.http, &self.base)
             .query(query)
+            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
             .timeout(how.client_timeout)
             .send()
             .await
@@ -150,6 +151,13 @@ impl HttpClient {
         let response_body: T::ResponseBody = response.json().await?;
         let answer = task.body_to_output(response_body);
         Ok(answer)
+    }
+
+    fn header_from_token(api_token: &str) -> header::HeaderValue {
+        let mut auth_value = header::HeaderValue::from_str(&format!("Bearer {api_token}")).unwrap();
+        // Consider marking security-sensitive headers with `set_sensitive`.
+        auth_value.set_sensitive(true);
+        auth_value
     }
 }
 

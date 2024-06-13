@@ -38,6 +38,29 @@ async fn completion_with_luminous_base() {
 }
 
 #[tokio::test]
+async fn completion_with_different_aa_api_token() {
+    let bad_aa_api_token = "DUMMY";
+    let task = TaskCompletion::from_text("Hello", 1);
+
+    let model = "luminous-base";
+    let client = Client::new(&bad_aa_api_token).unwrap();
+    let response = client
+        .output_of(
+            &task.with_model(model),
+            &How {
+                api_token: Some(AA_API_TOKEN.to_owned()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    eprintln!("{}", response.completion);
+
+    // Then
+    assert!(!response.completion.is_empty())
+}
+#[tokio::test]
 async fn semanitc_search_with_luminous_base() {
     // Given
     let robot_fact = Prompt::from_text(

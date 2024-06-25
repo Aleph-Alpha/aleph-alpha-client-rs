@@ -43,7 +43,7 @@ async fn completion_with_different_aa_api_token() {
     let task = TaskCompletion::from_text("Hello", 1);
 
     let model = "luminous-base";
-    let client = Client::new(&bad_aa_api_token).unwrap();
+    let client = Client::new(bad_aa_api_token).unwrap();
     let response = client
         .output_of(
             &task.with_model(model),

@@ -6,7 +6,7 @@
 //! #[tokio::main(flavor = "current_thread")]
 //! async fn main() {
 //!     // Authenticate against API. Fetches token.
-//!     let client = Client::new("AA_API_TOKEN").unwrap();
+//!     let client = Client::with_authentication("AA_API_TOKEN").unwrap();
 //!
 //!     // Name of the model we we want to use. Large models give usually better answer, but are also
 //!     // more costly.
@@ -63,15 +63,29 @@ pub struct Client {
 
 impl Client {
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
-    pub fn new(api_token: &str) -> Result<Self, Error> {
+    /// For "normal" client applications you may likely rather use [`Self::with_authentication`] or
+    /// [`Self::with_base_url`].
+    /// 
+    /// You may want to only use request based authentication and skip default authentication. This
+    /// is useful if writing an application which invokes the client on behalf of many different
+    /// users. Having neither request, nor default authentication is considered a bug and will cause
+    /// a panic.
+    pub fn new(host: String, api_token: Option<String>) -> Result<Self, Error> {
+        let http_client = HttpClient::with_base_url(host, api_token)?;
+        Ok(Self { http_client })
+    }
+
+    /// Use the Aleph Alpha SaaS offering with your API token for all requests.
+    pub fn with_authentication(api_token: impl Into<String>) -> Result<Self, Error> {
         Self::with_base_url("https://api.aleph-alpha.com".to_owned(), api_token)
     }
 
+    /// Use your on-premise inference with your API token for all requests.
+    /// 
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet
     /// you may want to use a different instances for testing.
-    pub fn with_base_url(host: String, api_token: &str) -> Result<Self, Error> {
-        let http_client = HttpClient::with_base_url(host, api_token)?;
-        Ok(Self { http_client })
+    pub fn with_base_url(host: String, api_token: impl Into<String>) -> Result<Self, Error> {
+        Self::new(host, Some(api_token.into()))
     }
 
     /// Execute a task with the aleph alpha API and fetch its result.
@@ -81,7 +95,7 @@ impl Client {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -145,7 +159,7 @@ impl Client {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -182,7 +196,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error, Granularity, TaskExplanation, Stopping, Prompt, Sampling};
     ///
     /// async fn print_explanation() -> Result<(), Error> {
-    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -226,7 +240,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, Error, How, TaskTokenization};
     ///
     /// async fn tokenize() -> Result<(), Error> {
-    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
     ///     // Name of the model for which we want to tokenize text.
     ///     let model = "luminous-base";
@@ -262,7 +276,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, Error, How, TaskDetokenization};
     ///
     /// async fn detokenize() -> Result<(), Error> {
-    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
     ///     // Specify the name of the model whose tokenizer was used to generate the input token ids.
     ///     let model = "luminous-base";

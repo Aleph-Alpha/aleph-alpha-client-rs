@@ -83,19 +83,19 @@ where
 pub struct HttpClient {
     base: String,
     http: reqwest::Client,
-    api_token: String,
+    api_token: Option<String>,
 }
 
 impl HttpClient {
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet you
     /// may want to use a different instances for testing.
-    pub fn with_base_url(host: String, api_token: &str) -> Result<Self, Error> {
+    pub fn with_base_url(host: String, api_token: Option<String>) -> Result<Self, Error> {
         let http = ClientBuilder::new().build()?;
 
         Ok(Self {
             base: host,
             http,
-            api_token: api_token.to_owned(),
+            api_token,
         })
     }
 
@@ -106,7 +106,7 @@ impl HttpClient {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::new("AA_API_TOKEN")?;
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -132,7 +132,11 @@ impl HttpClient {
             [].as_slice()
         };
 
-        let api_token = how.api_token.as_ref().unwrap_or(&self.api_token);
+        let api_token = how
+            .api_token
+            .as_ref()
+            .or(self.api_token.as_ref())
+            .expect("API token needs to be set on client construction or per request");
         let response = task
             .build_request(&self.http, &self.base)
             .query(query)

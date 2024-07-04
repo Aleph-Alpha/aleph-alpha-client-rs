@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader, sync::OnceLock};
 
 use aleph_alpha_client::{
     cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Modality, Prompt,
@@ -8,15 +8,14 @@ use aleph_alpha_client::{
 };
 use dotenv::dotenv;
 use image::ImageFormat;
-use lazy_static::lazy_static;
 
-lazy_static! {
-    static ref AA_API_TOKEN: String = {
-        // Use `.env` file if it exists
-        let _ = dotenv();
+fn api_token() -> &'static str {
+    static AA_API_TOKEN: OnceLock<String> = OnceLock::new();
+    AA_API_TOKEN.get_or_init(|| {
+        drop(dotenv());
         std::env::var("AA_API_TOKEN")
             .expect("AA_API_TOKEN environment variable must be specified to run tests.")
-    };
+    })
 }
 
 #[tokio::test]
@@ -25,7 +24,7 @@ async fn completion_with_luminous_base() {
     let task = TaskCompletion::from_text("Hello", 1);
 
     let model = "luminous-base";
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -38,17 +37,17 @@ async fn completion_with_luminous_base() {
 }
 
 #[tokio::test]
-async fn completion_with_different_aa_api_token() {
+async fn request_authentication_has_priority() {
     let bad_aa_api_token = "DUMMY";
     let task = TaskCompletion::from_text("Hello", 1);
 
     let model = "luminous-base";
-    let client = Client::new(bad_aa_api_token).unwrap();
+    let client = Client::with_authentication(bad_aa_api_token).unwrap();
     let response = client
         .output_of(
             &task.with_model(model),
             &How {
-                api_token: Some(AA_API_TOKEN.to_owned()),
+                api_token: Some(api_token().to_owned()),
                 ..Default::default()
             },
         )
@@ -60,6 +59,47 @@ async fn completion_with_different_aa_api_token() {
     // Then
     assert!(!response.completion.is_empty())
 }
+
+#[tokio::test]
+async fn authentication_only_per_request() {
+    // Given
+    let model = "luminous-base";
+    let task = TaskCompletion::from_text("Hello", 1);
+
+    // When
+    let client = Client::new("https://api.aleph-alpha.com".to_owned(), None).unwrap();
+    let response = client
+        .output_of(
+            &task.with_model(model),
+            &How {
+                api_token: Some(api_token().to_owned()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    // Then there is some successful completion
+    assert!(!response.completion.is_empty())
+}
+
+#[should_panic = "API token needs to be set on client construction or per request"]
+#[tokio::test]
+async fn must_panic_if_authentication_is_missing() {
+    // Given
+    let model = "luminous-base";
+    let task = TaskCompletion::from_text("Hello", 1);
+
+    // When
+    let client = Client::new("https://api.aleph-alpha.com".to_owned(), None).unwrap();
+    client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then the client panics on invocation
+}
+
 #[tokio::test]
 async fn semanitc_search_with_luminous_base() {
     // Given
@@ -75,7 +115,7 @@ async fn semanitc_search_with_luminous_base() {
         temperature, traditionally in a wood-fired oven.",
     );
     let query = Prompt::from_text("What is Pizza?");
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let robot_embedding_task = TaskSemanticEmbedding {
@@ -138,7 +178,7 @@ async fn complete_structured_prompt() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -160,7 +200,7 @@ async fn explain_request() {
         target: " How is it going?",
         granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Sentence),
     };
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let response = client
@@ -190,7 +230,7 @@ async fn explain_request_with_auto_granularity() {
         target: " How is it going?",
         granularity: Granularity::default(),
     };
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let response = client
@@ -222,7 +262,7 @@ async fn explain_request_with_image_modality() {
         target: " a cat.",
         granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Paragraph),
     };
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let response = client
@@ -272,7 +312,7 @@ async fn describe_image_starting_from_a_path() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -301,7 +341,7 @@ async fn describe_image_starting_from_a_dyn_image() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -327,7 +367,7 @@ async fn only_answer_with_specific_animal() {
         },
     };
     let model = "luminous-base";
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -354,7 +394,7 @@ async fn answer_should_continue() {
         },
     };
     let model = "luminous-base";
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -381,7 +421,7 @@ async fn batch_semanitc_embed_with_luminous_base() {
         temperature, traditionally in a wood-fired oven.",
     );
 
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let embedding_task = TaskBatchSemanticEmbedding {
@@ -406,7 +446,7 @@ async fn tokenization_with_luminous_base() {
     // Given
     let input = "Hello, World!";
 
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let task1 = TaskTokenization::new(input, false, true);
@@ -443,7 +483,7 @@ async fn detokenization_with_luminous_base() {
     // Given
     let input = vec![49222, 15, 5390, 4];
 
-    let client = Client::new(&AA_API_TOKEN).unwrap();
+    let client = Client::with_authentication(api_token()).unwrap();
 
     // When
     let task = TaskDetokenization { token_ids: &input };

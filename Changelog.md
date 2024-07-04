@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.10.1
+
+* Fix: Version number in Cargo.toml
+
 ## 0.10.0
 
 * Add the option to have authentication exclusively on a per request basis, without the need to specify a dummy token.

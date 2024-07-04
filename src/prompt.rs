@@ -90,7 +90,7 @@ impl<'a> Modality<'a> {
     ///     let _ = dotenv();
     ///     let aa_api_token = std::env::var("AA_API_TOKEN")
     ///         .expect("AA_API_TOKEN environment variable must be specified to run demo.");
-    ///     let client = Client::new(&aa_api_token).unwrap();
+    ///     let client = Client::with_authentication(aa_api_token).unwrap();
     ///     // Define task
     ///     let task = TaskCompletion {
     ///         prompt: Prompt::from_vec(vec![

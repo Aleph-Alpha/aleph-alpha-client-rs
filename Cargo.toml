@@ -21,6 +21,5 @@ thiserror = "1.0.58"
 
 [dev-dependencies]
 dotenv = "0.15.0"
-lazy_static = "1.4.0"
 tokio = { version = "1.37.0", features = ["rt", "macros"] }
 wiremock = "0.6.0"

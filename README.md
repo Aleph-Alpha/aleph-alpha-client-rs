@@ -10,7 +10,7 @@ use aleph_alpha_client::{Client, TaskCompletion, How, Task};
 #[tokio::main]
 fn main() {
     // Authenticate against API. Fetches token.
-    let client = Client::new("AA_API_TOKEN").unwrap();
+    let client = Client::with_authentication("AA_API_TOKEN").unwrap();
 
     // Name of the model we we want to use. Large models give usually better answer, but are also
     // more costly.

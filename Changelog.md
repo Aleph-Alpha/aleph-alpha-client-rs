@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.10.0
+
+* Add the option to have authentication exclusively on a per request basis, without the need to specify a dummy token.
+* Rename `Client::new` to `Client::with_authentication`.
+
 ## 0.9.0
 
 * Add `How::api_token` to allow specifying API tokens for individual requests.

@@ -14,14 +14,18 @@ pub struct TaskCompletion<'a> {
 }
 
 impl<'a> TaskCompletion<'a> {
-    /// Convenience constructor leaving most setting to default, just completing a given text and
-    /// taking the maximum anticipated length of the completion.
-    pub fn from_text(text: &'a str, maximum_tokens: u32) -> Self {
+    /// Convenience constructor leaving most setting to default, just completing a given text
+    pub fn from_text(text: &'a str) -> Self {
         TaskCompletion {
             prompt: Prompt::from_text(text),
-            stopping: Stopping::from_maximum_tokens(maximum_tokens),
+            stopping: Stopping::CONTEXT_WINDOW,
             sampling: Sampling::MOST_LIKELY,
         }
+    }
+
+    pub fn with_maximum_tokens(mut self, maximum_tokens: u32) -> Self {
+        self.stopping.maximum_tokens = Some(maximum_tokens);
+        self
     }
 }
 
@@ -69,7 +73,7 @@ impl Default for Sampling<'_> {
 /// Controls the conditions under which the language models stops generating text.
 pub struct Stopping<'a> {
     /// The maximum number of tokens to be generated. Completion will terminate after the maximum
-    /// number of tokens is reached.Increase this value to allow for longer outputs. A text is split
+    /// number of tokens is reached. Increase this value to allow for longer outputs. A text is split
     /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
     /// and maximum_tokens depends on the model.
     pub maximum_tokens: Option<u32>,

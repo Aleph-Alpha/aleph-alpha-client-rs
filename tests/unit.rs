@@ -32,7 +32,7 @@ async fn completion_with_luminous_base() {
         .await;
 
     // When
-    let task = TaskCompletion::from_text("Hello,", 1);
+    let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let response = client
@@ -72,7 +72,7 @@ async fn detect_rate_limiting() {
         .await;
 
     // When
-    let task = TaskCompletion::from_text("Hello,", 1);
+    let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
@@ -116,7 +116,7 @@ async fn detect_queue_full() {
         .await;
 
     // When
-    let task = TaskCompletion::from_text("Hello,", 1);
+    let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
@@ -153,7 +153,7 @@ async fn detect_service_unavailable() {
         .await;
 
     // When
-    let task = TaskCompletion::from_text("Hello,", 1);
+    let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     let error = client
@@ -175,7 +175,7 @@ async fn be_nice() {
     let mock_server = MockServer::start().await;
 
     // When
-    let task = TaskCompletion::from_text("Hello,", 1);
+    let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
     let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
     // Drop result, answer is meaningless anyway
@@ -211,7 +211,9 @@ async fn client_timeout() {
     // When
     let result = client
         .output_of(
-            &TaskCompletion::from_text("Hello,", 1).with_model("any"),
+            &TaskCompletion::from_text("Hello,")
+                .with_maximum_tokens(1)
+                .with_model("any"),
             &How {
                 client_timeout: response_time / 2,
                 ..Default::default()

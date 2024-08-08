@@ -13,7 +13,7 @@
 //!     let model = "luminous-base";
 //!
 //!     // The task we want to perform. Here we want to continue the sentence: "An apple a day ..."
-//!     let task = TaskCompletion::from_text("An apple a day", 10);
+//!     let task = TaskCompletion::from_text("An apple a day");
 //!     
 //!     // Retrieve the answer from the API
 //!     let response = client.completion(&task, model, &How::default()).await.unwrap();
@@ -65,7 +65,7 @@ impl Client {
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
     /// For "normal" client applications you may likely rather use [`Self::with_authentication`] or
     /// [`Self::with_base_url`].
-    /// 
+    ///
     /// You may want to only use request based authentication and skip default authentication. This
     /// is useful if writing an application which invokes the client on behalf of many different
     /// users. Having neither request, nor default authentication is considered a bug and will cause
@@ -81,7 +81,7 @@ impl Client {
     }
 
     /// Use your on-premise inference with your API token for all requests.
-    /// 
+    ///
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet
     /// you may want to use a different instances for testing.
     pub fn with_base_url(host: String, api_token: impl Into<String>) -> Result<Self, Error> {
@@ -103,7 +103,7 @@ impl Client {
     ///
     ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
     ///     // ..."
-    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    ///     let task = TaskCompletion::from_text("An apple a day");
     ///
     ///     // Retrieve answer from API
     ///     let response = client.execute(model, &task, &How::default()).await?;
@@ -167,7 +167,7 @@ impl Client {
     ///
     ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
     ///     // ..."
-    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    ///     let task = TaskCompletion::from_text("An apple a day");
     ///
     ///     // Retrieve answer from API
     ///     let response = client.completion(&task, model, &How::default()).await?;

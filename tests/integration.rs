@@ -21,7 +21,7 @@ fn api_token() -> &'static str {
 #[tokio::test]
 async fn completion_with_luminous_base() {
     // When
-    let task = TaskCompletion::from_text("Hello", 1);
+    let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     let model = "luminous-base";
     let client = Client::with_authentication(api_token()).unwrap();
@@ -39,7 +39,7 @@ async fn completion_with_luminous_base() {
 #[tokio::test]
 async fn request_authentication_has_priority() {
     let bad_aa_api_token = "DUMMY";
-    let task = TaskCompletion::from_text("Hello", 1);
+    let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     let model = "luminous-base";
     let client = Client::with_authentication(bad_aa_api_token).unwrap();
@@ -64,7 +64,7 @@ async fn request_authentication_has_priority() {
 async fn authentication_only_per_request() {
     // Given
     let model = "luminous-base";
-    let task = TaskCompletion::from_text("Hello", 1);
+    let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     // When
     let client = Client::new("https://api.aleph-alpha.com".to_owned(), None).unwrap();
@@ -88,7 +88,7 @@ async fn authentication_only_per_request() {
 async fn must_panic_if_authentication_is_missing() {
     // Given
     let model = "luminous-base";
-    let task = TaskCompletion::from_text("Hello", 1);
+    let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     // When
     let client = Client::new("https://api.aleph-alpha.com".to_owned(), None).unwrap();

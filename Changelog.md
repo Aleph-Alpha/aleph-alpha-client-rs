@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.11.0
+
+* Add `with_maximum_tokens` method to `Prompt`
+* Remove maximum tokens argument from `Prompt::from_text`
+* Make maximum tokens optional
+
 ## 0.10.1
 
 * Fix: Version number in Cargo.toml

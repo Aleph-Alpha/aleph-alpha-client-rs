@@ -72,7 +72,7 @@ pub struct Stopping<'a> {
     /// number of tokens is reached.Increase this value to allow for longer outputs. A text is split
     /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
     /// and maximum_tokens depends on the model.
-    pub maximum_tokens: u32,
+    pub maximum_tokens: Option<u32>,
     /// List of strings which will stop generation if they are generated. Stop sequences are
     /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
     /// lines starting with either "Question: " or "Answer: " (alternating). After producing an
@@ -83,12 +83,25 @@ pub struct Stopping<'a> {
 }
 
 impl<'a> Stopping<'a> {
+    /// Only stop once the model generates end of text, or the sum of input tokens and generated
+    /// tokens has reached the model's context window size.
+    pub const CONTEXT_WINDOW: Self = Stopping {
+        maximum_tokens: None,
+        stop_sequences: &[],
+    };
+
     /// Only stop once the model generates end of text, or maximum tokens are reached.
     pub fn from_maximum_tokens(maximum_tokens: u32) -> Self {
         Self {
-            maximum_tokens,
+            maximum_tokens: Some(maximum_tokens),
             stop_sequences: &[],
         }
+    }
+}
+
+impl Default for Stopping<'_> {
+    fn default() -> Self {
+        Self::CONTEXT_WINDOW
     }
 }
 
@@ -100,7 +113,8 @@ struct BodyCompletion<'a> {
     /// Prompt to complete. The modalities supported depend on `model`.
     pub prompt: Prompt<'a>,
     /// Limits the number of tokens, which are generated for the completion.
-    pub maximum_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum_tokens: Option<u32>,
     /// List of strings which will stop generation if they are generated. Stop sequences are
     /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
     /// lines starting with either "Question: " or "Answer: " (alternating). After producing an

@@ -114,7 +114,7 @@ impl HttpClient {
     ///
     ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
     ///     // ..."
-    ///     let task = TaskCompletion::from_text("An apple a day", 10);
+    ///     let task = TaskCompletion::from_text("An apple a day");
     ///
     ///     // Retrieve answer from API
     ///     let response = client.output_of(&task.with_model(model), &How::default()).await?;

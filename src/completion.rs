@@ -18,7 +18,7 @@ impl<'a> TaskCompletion<'a> {
     pub fn from_text(text: &'a str) -> Self {
         TaskCompletion {
             prompt: Prompt::from_text(text),
-            stopping: Stopping::CONTEXT_WINDOW,
+            stopping: Stopping::NO_TOKEN_LIMIT,
             sampling: Sampling::MOST_LIKELY,
         }
     }
@@ -76,6 +76,9 @@ pub struct Stopping<'a> {
     /// number of tokens is reached. Increase this value to allow for longer outputs. A text is split
     /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
     /// and maximum_tokens depends on the model.
+    /// If maximum tokens is set to None, no outside limit is opposed on the number of maximum tokens.
+    /// The model will generate tokens until it either emits a stop token or it reaches its technical
+    /// limit, which usually is its context window.
     pub maximum_tokens: Option<u32>,
     /// List of strings which will stop generation if they are generated. Stop sequences are
     /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
@@ -87,9 +90,9 @@ pub struct Stopping<'a> {
 }
 
 impl<'a> Stopping<'a> {
-    /// Only stop once the model generates end of text, or the sum of input tokens and generated
-    /// tokens has reached the model's context window size.
-    pub const CONTEXT_WINDOW: Self = Stopping {
+    /// Only stop once the model generates end of text, or it reaches its technical limit, usually the
+    /// context window.
+    pub const NO_TOKEN_LIMIT: Self = Stopping {
         maximum_tokens: None,
         stop_sequences: &[],
     };
@@ -105,7 +108,7 @@ impl<'a> Stopping<'a> {
 
 impl Default for Stopping<'_> {
     fn default() -> Self {
-        Self::CONTEXT_WINDOW
+        Self::NO_TOKEN_LIMIT
     }
 }
 

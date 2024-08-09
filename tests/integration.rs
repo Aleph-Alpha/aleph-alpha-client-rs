@@ -194,7 +194,7 @@ async fn complete_structured_prompt() {
 async fn context_window_stopping() {
     // Given
     let prompt = "Bot: Hello user!\nUser: Hello Bot, how are you doing?\nBot:";
-    let stopping = Stopping::default();
+    let stopping = Stopping::NO_TOKEN_LIMIT;
 
     // When
     let task = TaskCompletion {

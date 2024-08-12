@@ -191,10 +191,14 @@ async fn complete_structured_prompt() {
 }
 
 #[tokio::test]
-async fn context_window_stopping() {
+async fn maximum_tokens_none_request() {
     // Given
     let prompt = "Bot: Hello user!\nUser: Hello Bot, how are you doing?\nBot:";
-    let stopping = Stopping::NO_TOKEN_LIMIT;
+    let var_name = Stopping {
+        maximum_tokens: None,
+        stop_sequences: &["User"],
+    };
+    let stopping = var_name;
 
     // When
     let task = TaskCompletion {
@@ -211,6 +215,7 @@ async fn context_window_stopping() {
 
     // Then
     assert!(!response.completion.is_empty());
+    assert_eq!(response.completion, " I am doing fine, how are you?\n");
 }
 
 #[tokio::test]

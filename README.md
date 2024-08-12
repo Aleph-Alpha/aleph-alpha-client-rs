@@ -17,7 +17,7 @@ fn main() {
     let model = "luminous-base";
 
     // The task we want to perform. Here we want to continue the sentence: "An apple a day ..."
-    let task = TaskCompletion::from_text("An apple a day");
+    let task = TaskCompletion::from_text("An apple a day").with_maximum_tokens(20);
     
     // Retrieve the answer from the API
     let response = client.completion(&task, model, &How::default()).await.unwrap();

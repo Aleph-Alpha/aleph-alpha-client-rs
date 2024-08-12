@@ -27,6 +27,11 @@ impl<'a> TaskCompletion<'a> {
         self.stopping.maximum_tokens = Some(maximum_tokens);
         self
     }
+
+    pub fn with_stop_sequences(mut self, stop_sequences: &'a [&str]) -> Self {
+        self.stopping.stop_sequences = stop_sequences;
+        self
+    }
 }
 
 /// Sampling controls how the tokens ("words") are selected for the completion.

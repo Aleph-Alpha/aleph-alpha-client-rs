@@ -82,8 +82,8 @@ pub struct Stopping<'a> {
     /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
     /// and maximum_tokens depends on the model.
     /// If maximum tokens is set to None, no outside limit is opposed on the number of maximum tokens.
-    /// The model will generate tokens until it either emits a stop token or it reaches its technical
-    /// limit, which usually is its context window.
+    /// The model will generate tokens until it generates one of the specified stop_sequences or it
+    /// reaches its technical limit, which usually is its context window.
     pub maximum_tokens: Option<u32>,
     /// List of strings which will stop generation if they are generated. Stop sequences are
     /// helpful in structured texts. E.g.: In a question answering scenario a text may consist of
@@ -95,14 +95,13 @@ pub struct Stopping<'a> {
 }
 
 impl<'a> Stopping<'a> {
-    /// Only stop once the model generates end of text, or it reaches its technical limit, usually the
-    /// context window.
+    /// Only stop once the model reaches its technical limit, usually the context window.
     pub const NO_TOKEN_LIMIT: Self = Stopping {
         maximum_tokens: None,
         stop_sequences: &[],
     };
 
-    /// Only stop once the model generates end of text, or maximum tokens are reached.
+    /// Stop once the model has reached maximum_tokens.
     pub fn from_maximum_tokens(maximum_tokens: u32) -> Self {
         Self {
             maximum_tokens: Some(maximum_tokens),

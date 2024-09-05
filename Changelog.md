@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.12.0
+
+* Add `Client::tokenizer_by_model` to fetch the Tokenizer for a given model name
+
 ## 0.11.0
 
 * Add `with_maximum_tokens` method to `Prompt`

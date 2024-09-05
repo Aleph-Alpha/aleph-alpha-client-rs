@@ -524,3 +524,18 @@ async fn detokenization_with_luminous_base() {
     // Then
     assert!(response.result.contains("Hello, World!"));
 }
+
+#[tokio::test]
+async fn fetch_tokenizer_for_pharia_1_llm_7b() {
+    // Given
+    let client = Client::with_authentication(api_token()).unwrap();
+
+    // When
+    let tokenizer = client
+        .tokenizer_by_model("Pharia-1-LLM-7B-control", None)
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(128_000, tokenizer.get_vocab_size(true));
+}

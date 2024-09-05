@@ -36,6 +36,7 @@ use std::time::Duration;
 
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
+use tokenizers::Tokenizer;
 
 pub use self::{
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
@@ -302,6 +303,10 @@ impl Client {
         self.http_client
             .output_of(&task.with_model(model), how)
             .await
+    }
+
+    pub async fn tokenizer_by_model(&self, model: &str, api_token: Option<String>) -> Result<Tokenizer, Error> {
+        self.http_client.tokenizer_by_model(model, api_token).await
     }
 }
 

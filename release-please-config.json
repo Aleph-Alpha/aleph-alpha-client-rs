@@ -1,0 +1,10 @@
+{
+    "bump-minor-pre-major": true,
+    "bump-patch-for-minor-pre-major": true,
+    "last-release-sha": "74c5ca507db8cb62e506600b8f4b41b2223c745a",
+    "packages": {
+        ".": {
+            "release-type": "rust"
+        }
+    }
+}

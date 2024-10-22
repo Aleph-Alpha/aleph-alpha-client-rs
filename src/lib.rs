@@ -193,7 +193,7 @@ impl Client {
 
     /// Send a chat message to a model.
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskChat, Error};
+    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Role};
     ///
     /// async fn chat() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.

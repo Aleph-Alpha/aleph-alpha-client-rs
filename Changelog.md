@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.12.2
+
+* Fix missing import in doc string
+
+## 0.12.1
+
+* Add `Client::chat` method to send chat messages to a model
+
 ## 0.12.0
 
 * Add `Client::tokenizer_by_model` to fetch the Tokenizer for a given model name

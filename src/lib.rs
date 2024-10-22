@@ -23,6 +23,7 @@
 //! }
 //! ```
 
+mod chat;
 mod completion;
 mod detokenization;
 mod explanation;
@@ -31,7 +32,6 @@ mod image_preprocessing;
 mod prompt;
 mod semantic_embedding;
 mod tokenization;
-
 use std::time::Duration;
 
 use http::HttpClient;
@@ -39,6 +39,7 @@ use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 use tokenizers::Tokenizer;
 
 pub use self::{
+    chat::{Role, TaskChat},
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
@@ -305,7 +306,11 @@ impl Client {
             .await
     }
 
-    pub async fn tokenizer_by_model(&self, model: &str, api_token: Option<String>) -> Result<Tokenizer, Error> {
+    pub async fn tokenizer_by_model(
+        &self,
+        model: &str,
+        api_token: Option<String>,
+    ) -> Result<Tokenizer, Error> {
         self.http_client.tokenizer_by_model(model, api_token).await
     }
 }

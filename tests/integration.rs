@@ -2,8 +2,8 @@ use std::{fs::File, io::BufReader, sync::OnceLock};
 
 use aleph_alpha_client::{
     cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Modality, Prompt,
-    PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
-    TaskBatchSemanticEmbedding, TaskCompletion, TaskDetokenization, TaskExplanation,
+    PromptGranularity, Role, Sampling, SemanticRepresentation, Stopping, Task,
+    TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
     TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
 use dotenv::dotenv;
@@ -16,6 +16,24 @@ fn api_token() -> &'static str {
         std::env::var("AA_API_TOKEN")
             .expect("AA_API_TOKEN environment variable must be specified to run tests.")
     })
+}
+
+#[tokio::test]
+async fn chat_with_pharia_1_7b_base() {
+    // When
+    let task = TaskChat::new(Role::System, "Instructions").append_message(Role::User, "Question");
+
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_authentication(api_token()).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    eprintln!("{:?}", response.message);
+
+    // Then
+    assert!(!response.message.content.is_empty())
 }
 
 #[tokio::test]
@@ -539,3 +557,4 @@ async fn fetch_tokenizer_for_pharia_1_llm_7b() {
     // Then
     assert_eq!(128_000, tokenizer.get_vocab_size(true));
 }
+

@@ -25,12 +25,7 @@ async fn chat_with_pharia_1_7b_base() {
 
     let model = "pharia-1-llm-7b-control";
     let client = Client::with_authentication(api_token()).unwrap();
-    let response = client
-        .output_of(&task.with_model(model), &How::default())
-        .await
-        .unwrap();
-
-    eprintln!("{:?}", response.message);
+    let response = client.chat(&task, model, &How::default()).await.unwrap();
 
     // Then
     assert!(!response.message.content.is_empty())
@@ -557,4 +552,3 @@ async fn fetch_tokenizer_for_pharia_1_llm_7b() {
     // Then
     assert_eq!(128_000, tokenizer.get_vocab_size(true));
 }
-

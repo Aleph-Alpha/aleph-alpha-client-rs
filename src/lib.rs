@@ -34,6 +34,7 @@ mod semantic_embedding;
 mod tokenization;
 use std::time::Duration;
 
+use chat::Choice;
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 use tokenizers::Tokenizer;
@@ -185,6 +186,34 @@ impl Client {
         model: &str,
         how: &How,
     ) -> Result<CompletionOutput, Error> {
+        self.http_client
+            .output_of(&task.with_model(model), how)
+            .await
+    }
+
+    /// Send a chat message to a model.
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskChat, Error};
+    ///
+    /// async fn chat() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///
+    ///     // Name of a model that supports chat.
+    ///     let model = "pharia-1-llm-7b-control";
+    ///
+    ///     // Create a chat task with a user message.
+    ///     let task = TaskChat::new(Role::User, "Hello, how are you?");
+    ///
+    ///     // Send the message to the model.
+    ///     let response = client.chat(&task, model, &How::default()).await?;
+    ///
+    ///     // Print the model response
+    ///     println!("{}", response.message.content);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn chat(&self, task: &TaskChat<'_>, model: &str, how: &How) -> Result<Choice, Error> {
         self.http_client
             .output_of(&task.with_model(model), how)
             .await

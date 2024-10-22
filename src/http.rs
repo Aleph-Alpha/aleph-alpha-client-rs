@@ -165,17 +165,25 @@ impl HttpClient {
         auth_value
     }
 
-    pub async fn tokenizer_by_model(&self, model: &str, api_token: Option<String> ) -> Result<Tokenizer, Error> {
+    pub async fn tokenizer_by_model(
+        &self,
+        model: &str,
+        api_token: Option<String>,
+    ) -> Result<Tokenizer, Error> {
         let api_token = api_token
             .as_ref()
             .or(self.api_token.as_ref())
             .expect("API token needs to be set on client construction or per request");
-        let response = self.http.get(format!("{}/models/{model}/tokenizer", self.base))
-            .header(header::AUTHORIZATION, Self::header_from_token(api_token)).send().await?;
+        let response = self
+            .http
+            .get(format!("{}/models/{model}/tokenizer", self.base))
+            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
+            .send()
+            .await?;
         let response = translate_http_error(response).await?;
         let bytes = response.bytes().await?;
-        let tokenizer = Tokenizer::from_bytes(bytes).map_err(|e| {
-            Error::InvalidTokenizer { deserialization_error: e.to_string() }
+        let tokenizer = Tokenizer::from_bytes(bytes).map_err(|e| Error::InvalidTokenizer {
+            deserialization_error: e.to_string(),
         })?;
         Ok(tokenizer)
     }
@@ -251,10 +259,11 @@ pub enum Error {
     /// An error on the Http Protocol level.
     #[error("HTTP request failed with status code {}. Body:\n{}", status, body)]
     Http { status: u16, body: String },
-    #[error("Tokenizer could not be correctly deserialized. Caused by:\n{}", deserialization_error)]
-    InvalidTokenizer {
-        deserialization_error: String,
-    },
+    #[error(
+        "Tokenizer could not be correctly deserialized. Caused by:\n{}",
+        deserialization_error
+    )]
+    InvalidTokenizer { deserialization_error: String },
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
     Other(#[from] reqwest::Error),

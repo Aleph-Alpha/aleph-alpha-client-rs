@@ -83,14 +83,14 @@ impl<'a> TaskChat<'a> {
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct Choice<'a> {
-    pub message: Message<'a>,
+pub struct Choice {
+    pub message: Message<'static>,
     pub finish_reason: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct ChatResponse<'a> {
-    pub choices: Vec<Choice<'a>>,
+pub struct ChatResponse {
+    pub choices: Vec<Choice>,
 }
 #[derive(Serialize)]
 struct ChatBody<'a> {
@@ -125,9 +125,9 @@ impl<'a> ChatBody<'a> {
 }
 
 impl<'a> Task for TaskChat<'a> {
-    type Output = Choice<'a>;
+    type Output = Choice;
 
-    type ResponseBody = ChatResponse<'a>;
+    type ResponseBody = ChatResponse;
 
     fn build_request(
         &self,

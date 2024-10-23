@@ -1,11 +1,13 @@
 use std::{borrow::Cow, time::Duration};
 
-use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
+use futures_util::stream::StreamExt;
+use reqwest::{header, ClientBuilder, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 use tokenizers::Tokenizer;
+use tokio::sync::mpsc;
 
-use crate::How;
+use crate::{stream::parse_stream_event, How};
 
 /// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
 /// for the Aleph Alpha API to specify its result. Notably it includes the model(s) the job is
@@ -19,7 +21,7 @@ pub trait Job {
     type Output;
 
     /// Expected answer of the Aleph Alpha API
-    type ResponseBody: for<'de> Deserialize<'de>;
+    type ResponseBody: for<'de> Deserialize<'de> + Send;
 
     /// Prepare the request for the Aleph Alpha API. Authentication headers can be assumed to be
     /// already set.
@@ -36,7 +38,7 @@ pub trait Task {
     type Output;
 
     /// Expected answer of the Aleph Alpha API
-    type ResponseBody: for<'de> Deserialize<'de>;
+    type ResponseBody: for<'de> Deserialize<'de> + Send;
 
     /// Prepare the request for the Aleph Alpha API. Authentication headers can be assumed to be
     /// already set.
@@ -100,32 +102,8 @@ impl HttpClient {
         })
     }
 
-    /// Execute a task with the aleph alpha API and fetch its result.
-    ///
-    /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error};
-    ///
-    /// async fn print_completion() -> Result<(), Error> {
-    ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
-    ///
-    ///     // Name of the model we we want to use. Large models give usually better answer, but are
-    ///     // also slower and more costly.
-    ///     let model = "luminous-base";
-    ///
-    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
-    ///     // ..."
-    ///     let task = TaskCompletion::from_text("An apple a day");
-    ///
-    ///     // Retrieve answer from API
-    ///     let response = client.output_of(&task.with_model(model), &How::default()).await?;
-    ///
-    ///     // Print entire sentence with completion
-    ///     println!("An apple a day{}", response.completion);
-    ///     Ok(())
-    /// }
-    /// ```
-    pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
+    /// Execute a task with the aleph alpha API and return the response without awaiting the body.
+    pub async fn request<T: Job>(&self, task: &T, how: &How) -> Result<Response, Error> {
         let query = if how.be_nice {
             [("nice", "true")].as_slice()
         } else {
@@ -152,10 +130,69 @@ impl HttpClient {
                     reqwest_error.into()
                 }
             })?;
-        let response = translate_http_error(response).await?;
+        translate_http_error(response).await
+    }
+
+    /// Execute a task with the aleph alpha API and fetch its result.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error};
+    ///
+    /// async fn print_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
+    ///     let task = TaskCompletion::from_text("An apple a day");
+    ///
+    ///     // Retrieve answer from API
+    ///     let response = client.output_of(&task.with_model(model), &How::default()).await?;
+    ///
+    ///     // Print entire sentence with completion
+    ///     println!("An apple a day{}", response.completion);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
+        let response = self.request(task, how).await?;
         let response_body: T::ResponseBody = response.json().await?;
         let answer = task.body_to_output(response_body);
         Ok(answer)
+    }
+
+    pub async fn stream_output_of<T: Job>(
+        &self,
+        task: &T,
+        how: &How,
+    ) -> Result<mpsc::Receiver<Result<T::ResponseBody, Error>>, Error>
+    where
+        T::ResponseBody: Send + 'static,
+    {
+        let response = self.request(task, how).await?;
+        let mut stream = response.bytes_stream();
+
+        let (tx, rx) = mpsc::channel::<Result<T::ResponseBody, Error>>(100);
+        tokio::spawn(async move {
+            while let Some(item) = stream.next().await {
+                match item {
+                    Ok(bytes) => {
+                        let events = parse_stream_event::<T::ResponseBody>(bytes.as_ref());
+                        for event in events {
+                            tx.send(event).await.unwrap();
+                        }
+                    }
+                    Err(e) => {
+                        tx.send(Err(e.into())).await.unwrap();
+                    }
+                }
+            }
+        });
+        Ok(rx)
     }
 
     fn header_from_token(api_token: &str) -> header::HeaderValue {
@@ -264,6 +301,11 @@ pub enum Error {
         deserialization_error
     )]
     InvalidTokenizer { deserialization_error: String },
+    /// Deserialization error of the stream event.
+    #[error(
+        "Stream event could not be correctly deserialized. Caused by:\n{cause}. Event:\n{event}"
+    )]
+    StreamDeserializationError { cause: String, event: String },
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
     Other(#[from] reqwest::Error),

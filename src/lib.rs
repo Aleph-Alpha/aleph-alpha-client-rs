@@ -31,12 +31,14 @@ mod http;
 mod image_preprocessing;
 mod prompt;
 mod semantic_embedding;
+mod stream;
 mod tokenization;
 use std::time::Duration;
 
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 use tokenizers::Tokenizer;
+use tokio::sync::mpsc;
 
 pub use self::{
     chat::{ChatOutput, Message, TaskChat},
@@ -51,6 +53,7 @@ pub use self::{
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
     },
+    stream::{CompletionSummary, Event, StreamChunk, StreamSummary, TaskStreamCompletion},
     tokenization::{TaskTokenization, TokenizationOutput},
 };
 
@@ -190,6 +193,44 @@ impl Client {
             .await
     }
 
+    /// Instruct a model served by the aleph alpha API to continue writing a piece of text.
+    /// Stream the response as a series of events.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Error, Event};
+    /// async fn print_stream_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
+    ///     let task = TaskCompletion::from_text("An apple a day").with_streaming();
+    ///
+    ///     // Retrieve stream from API
+    ///     let mut response = client.stream_completion(&task, model, &How::default()).await?;
+    ///     while let Some(Ok(event)) = response.recv().await {
+    ///         if let Event::StreamChunk(chunk) = event {
+    ///             println!("{}", chunk.completion);
+    ///         }
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn stream_completion(
+        &self,
+        task: &TaskStreamCompletion<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<mpsc::Receiver<Result<Event, Error>>, Error> {
+        self.http_client
+            .stream_output_of(&task.with_model(model), how)
+            .await
+    }
+
     /// Send a chat message to a model.
     /// ```no_run
     /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message};
@@ -213,11 +254,11 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn chat<'a>(
-        &'a self,
-        task: &'a TaskChat<'a>,
-        model: &'a str,
-        how: &'a How,
+    pub async fn chat(
+        &self,
+        task: &TaskChat<'_>,
+        model: &str,
+        how: &How,
     ) -> Result<ChatOutput, Error> {
         self.http_client
             .output_of(&task.with_model(model), how)

@@ -1,8 +1,8 @@
 use std::{fs::File, io::BufReader, sync::OnceLock};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Message, Modality,
-    Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
+    cosine_similarity, Client, Event, Granularity, How, ImageScore, ItemExplanation, Message,
+    Modality, Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
     TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
     TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
@@ -552,4 +552,33 @@ async fn fetch_tokenizer_for_pharia_1_llm_7b() {
 
     // Then
     assert_eq!(128_000, tokenizer.get_vocab_size(true));
+}
+
+#[tokio::test]
+async fn test_streaming_completion() {
+    // Given a streaming completion task
+    let client = Client::with_authentication(api_token()).unwrap();
+    let task = TaskCompletion::from_text("")
+        .with_maximum_tokens(7)
+        .with_streaming();
+
+    // When the events are streamed and collected
+    let mut rx = client
+        .stream_completion(&task, "luminous-base", &How::default())
+        .await
+        .unwrap();
+
+    let mut events = Vec::new();
+    while let Some(Ok(event)) = rx.recv().await {
+        events.push(event);
+    }
+
+    // Then there are at least one chunk, one summary and one completion summary
+    assert!(events.len() >= 3);
+    assert!(matches!(events[events.len() - 3], Event::StreamChunk(_)));
+    assert!(matches!(events[events.len() - 2], Event::StreamSummary(_)));
+    assert!(matches!(
+        events[events.len() - 1],
+        Event::CompletionSummary(_)
+    ));
 }

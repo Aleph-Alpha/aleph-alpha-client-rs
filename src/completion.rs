@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Prompt};
+use crate::{http::Task, Prompt, TaskStreamCompletion};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -31,6 +31,9 @@ impl<'a> TaskCompletion<'a> {
     pub fn with_stop_sequences(mut self, stop_sequences: &'a [&str]) -> Self {
         self.stopping.stop_sequences = stop_sequences;
         self
+    }
+    pub fn with_streaming(self) -> TaskStreamCompletion<'a> {
+        TaskStreamCompletion { task: self }
     }
 }
 
@@ -118,7 +121,7 @@ impl Default for Stopping<'_> {
 
 /// Body send to the Aleph Alpha API on the POST `/completion` Route
 #[derive(Serialize, Debug)]
-struct BodyCompletion<'a> {
+pub struct BodyCompletion<'a> {
     /// Name of the model tasked with completing the prompt. E.g. `luminous-base"`.
     pub model: &'a str,
     /// Prompt to complete. The modalities supported depend on `model`.
@@ -142,6 +145,9 @@ struct BodyCompletion<'a> {
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "<[_]>::is_empty")]
     pub completion_bias_inclusion: &'a [&'a str],
+    /// If true, the response will be streamed.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub stream: bool,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -155,7 +161,12 @@ impl<'a> BodyCompletion<'a> {
             top_k: task.sampling.top_k,
             top_p: task.sampling.top_p,
             completion_bias_inclusion: task.sampling.start_with_one_of,
+            stream: false,
         }
+    }
+    pub fn with_streaming(mut self) -> Self {
+        self.stream = true;
+        self
     }
 }
 

@@ -83,15 +83,16 @@ impl<'a> TaskChat<'a> {
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct Choice {
+pub struct ChatOutput {
     pub message: Message<'static>,
     pub finish_reason: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct ChatResponse {
-    pub choices: Vec<Choice>,
+pub struct ResponseChat {
+    pub choices: Vec<ChatOutput>,
 }
+
 #[derive(Serialize)]
 struct ChatBody<'a> {
     /// Name of the model tasked with completing the prompt. E.g. `luminous-base"`.
@@ -125,9 +126,9 @@ impl<'a> ChatBody<'a> {
 }
 
 impl<'a> Task for TaskChat<'a> {
-    type Output = Choice;
+    type Output = ChatOutput;
 
-    type ResponseBody = ChatResponse;
+    type ResponseBody = ResponseChat;
 
     fn build_request(
         &self,

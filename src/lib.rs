@@ -34,13 +34,12 @@ mod semantic_embedding;
 mod tokenization;
 use std::time::Duration;
 
-use chat::Choice;
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 use tokenizers::Tokenizer;
 
 pub use self::{
-    chat::{Role, TaskChat},
+    chat::{ChatOutput, Message, Role, TaskChat},
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
@@ -213,7 +212,7 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn chat(&self, task: &TaskChat<'_>, model: &str, how: &How) -> Result<Choice, Error> {
+    pub async fn chat(&self, task: &TaskChat<'_>, model: &str, how: &How) -> Result<ChatOutput, Error> {
         self.http_client
             .output_of(&task.with_model(model), how)
             .await

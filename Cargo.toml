@@ -11,10 +11,12 @@ categories = ["api-bindings"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-stream = "0.3.6"
 base64 = "0.22.0"
+futures-util = "0.3.31"
 image = "0.25.1"
 itertools = "0.13.0"
-reqwest = { version = "0.12.3", features = ["json"] }
+reqwest = { version = "0.12.3", features = ["json", "stream"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 thiserror = "1.0.58"

@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v4
       - if: ${{ steps.release.outputs.release_created }} 
-        steps:
-          - uses: actions/checkout@v4
-          - name: Publish to cargo
-            env:
-              CARGO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-            run: cargo publish --token "${CARGO_TOKEN}"
+        uses: actions/checkout@v4
+      - if: ${{ steps.release.outputs.release_created }}
+        name: Publish to cargo
+        env:
+          CARGO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --token "${CARGO_TOKEN}"

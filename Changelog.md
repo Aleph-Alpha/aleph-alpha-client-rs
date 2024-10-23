@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.12.3
+
+* Make `ChatOutput` public
+
 ## 0.12.2
 
 * Fix missing import in doc string

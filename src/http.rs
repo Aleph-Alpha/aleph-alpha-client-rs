@@ -28,7 +28,7 @@ pub trait Job {
     fn build_request(&self, client: &reqwest::Client, base: &str) -> RequestBuilder;
 
     /// Parses the response of the server into higher level structs for the user.
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output;
 }
 
 /// A task send to the Aleph Alpha Api using the http client. Requires to specify a model before it
@@ -45,7 +45,7 @@ pub trait Task {
     fn build_request(&self, client: &reqwest::Client, base: &str, model: &str) -> RequestBuilder;
 
     /// Parses the response of the server into higher level structs for the user.
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output;
 
     /// Turn your task into [`Job`] by annotating it with a model name.
     fn with_model<'a>(&'a self, model: &'a str) -> MethodJob<'a, Self>
@@ -77,8 +77,8 @@ where
         self.task.build_request(client, base, self.model)
     }
 
-    fn body_to_output(&self, response: T::ResponseBody) -> T::Output {
-        self.task.body_to_output(response)
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
+        T::body_to_output(response)
     }
 }
 
@@ -161,7 +161,7 @@ impl HttpClient {
     pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
         let response = self.request(task, how).await?;
         let response_body: T::ResponseBody = response.json().await?;
-        let answer = task.body_to_output(response_body);
+        let answer = T::body_to_output(response_body);
         Ok(answer)
     }
 

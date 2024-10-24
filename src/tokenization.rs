@@ -85,7 +85,7 @@ impl Task for TaskTokenization<'_> {
         client.post(format!("{base}/tokenize")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         TokenizationOutput::from(response)
     }
 }

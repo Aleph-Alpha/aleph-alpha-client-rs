@@ -212,7 +212,7 @@ impl Task for TaskCompletion<'_> {
         client.post(format!("{base}/complete")).json(&body)
     }
 
-    fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(mut response: Self::ResponseBody) -> Self::Output {
         response.completions.pop().unwrap()
     }
 }

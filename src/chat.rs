@@ -155,7 +155,7 @@ impl<'a> Task for TaskChat<'a> {
         client.post(format!("{base}/chat/completions")).json(&body)
     }
 
-    fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(mut response: Self::ResponseBody) -> Self::Output {
         response.choices.pop().unwrap()
     }
 }

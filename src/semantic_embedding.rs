@@ -76,7 +76,7 @@ impl Task for TaskSemanticEmbedding<'_> {
         client.post(format!("{base}/semantic_embed")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         response
     }
 }
@@ -94,7 +94,7 @@ impl Job for TaskSemanticEmbedding<'_> {
         client.post(format!("{base}/semantic_embed")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         response
     }
 }
@@ -141,7 +141,7 @@ impl Job for TaskBatchSemanticEmbedding<'_> {
             .json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         response
     }
 }

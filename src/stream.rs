@@ -65,7 +65,7 @@ impl Task for TaskStreamCompletion<'_> {
         client.post(format!("{base}/complete")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         response
     }
 }

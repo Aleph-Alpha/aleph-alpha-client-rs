@@ -174,7 +174,7 @@ impl Task for TaskExplanation<'_> {
         client.post(format!("{base}/explain")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         ExplanationOutput::from(response)
     }
 }

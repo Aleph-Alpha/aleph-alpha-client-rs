@@ -51,7 +51,7 @@ impl<'a> Task for TaskDetokenization<'a> {
         client.post(format!("{base}/detokenize")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         DetokenizationOutput::from(response)
     }
 }

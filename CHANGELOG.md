@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.0...aleph-alpha-client-v0.13.1) (2024-10-24)
+
+
+### Features
+
+* add id to release workflow ([4fb33c2](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/4fb33c20d90f1231bacff148dd15ed69c2c7b1ed))
+
 ## [0.13.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.12.3...aleph-alpha-client-v0.13.0) (2024-10-24)
 
 ### ⚠ BREAKING CHANGES

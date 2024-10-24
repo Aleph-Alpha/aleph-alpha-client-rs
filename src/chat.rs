@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
 
-use crate::Task;
+use crate::{stream::TaskStreamChat, Task};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Message<'a> {
@@ -95,6 +95,11 @@ impl<'a> TaskChat<'a> {
         self.top_p = Some(top_p);
         self
     }
+
+    /// Creates a wrapper `TaskStreamChat` for this TaskChat.
+    pub fn with_streaming(self) -> TaskStreamChat<'a> {
+        TaskStreamChat { task: self }
+    }
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
@@ -109,7 +114,7 @@ pub struct ResponseChat {
 }
 
 #[derive(Serialize)]
-struct ChatBody<'a> {
+pub struct ChatBody<'a> {
     /// Name of the model tasked with completing the prompt. E.g. `luminous-base"`.
     pub model: &'a str,
     /// The list of messages comprising the conversation so far.
@@ -126,6 +131,9 @@ struct ChatBody<'a> {
     /// When no value is provided, the default value of 1 will be used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+    /// Whether to stream the response or not.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub stream: bool,
 }
 
 impl<'a> ChatBody<'a> {
@@ -136,7 +144,13 @@ impl<'a> ChatBody<'a> {
             maximum_tokens: task.maximum_tokens,
             temperature: task.temperature,
             top_p: task.top_p,
+            stream: false,
         }
+    }
+
+    pub fn with_streaming(mut self) -> Self {
+        self.stream = true;
+        self
     }
 }
 

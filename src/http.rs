@@ -18,7 +18,7 @@ use crate::{stream::parse_stream_event, How};
 /// [`Task::with_model`].
 pub trait Job {
     /// Output returned by [`crate::Client::output_of`]
-    type Output;
+    type Output: Send;
 
     /// Expected answer of the Aleph Alpha API
     type ResponseBody: for<'de> Deserialize<'de> + Send;
@@ -35,7 +35,7 @@ pub trait Job {
 /// can be executed.
 pub trait Task {
     /// Output returned by [`crate::Client::output_of`]
-    type Output;
+    type Output: Send;
 
     /// Expected answer of the Aleph Alpha API
     type ResponseBody: for<'de> Deserialize<'de> + Send;
@@ -77,7 +77,7 @@ where
         self.task.build_request(client, base, self.model)
     }
 
-    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(response: T::ResponseBody) -> T::Output {
         T::body_to_output(response)
     }
 }
@@ -169,21 +169,22 @@ impl HttpClient {
         &self,
         task: &T,
         how: &How,
-    ) -> Result<mpsc::Receiver<Result<T::ResponseBody, Error>>, Error>
+    ) -> Result<mpsc::Receiver<Result<T::Output, Error>>, Error>
     where
-        T::ResponseBody: Send + 'static,
+        T::Output: 'static,
     {
         let response = self.request(task, how).await?;
         let mut stream = response.bytes_stream();
 
-        let (tx, rx) = mpsc::channel::<Result<T::ResponseBody, Error>>(100);
+        let (tx, rx) = mpsc::channel::<Result<T::Output, Error>>(100);
         tokio::spawn(async move {
             while let Some(item) = stream.next().await {
                 match item {
                     Ok(bytes) => {
                         let events = parse_stream_event::<T::ResponseBody>(bytes.as_ref());
                         for event in events {
-                            tx.send(event).await.unwrap();
+                            let output = event.map(|b| T::body_to_output(b));
+                            tx.send(output).await.unwrap();
                         }
                     }
                     Err(e) => {

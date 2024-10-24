@@ -1,8 +1,8 @@
 use std::{fs::File, io::BufReader, sync::OnceLock};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, Event, Granularity, How, ImageScore, ItemExplanation, Message,
-    Modality, Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
+    cosine_similarity, Client, CompletionEvent, Granularity, How, ImageScore, ItemExplanation,
+    Message, Modality, Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
     TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
     TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
@@ -555,7 +555,7 @@ async fn fetch_tokenizer_for_pharia_1_llm_7b() {
 }
 
 #[tokio::test]
-async fn test_streaming_completion() {
+async fn stream_completion() {
     // Given a streaming completion task
     let client = Client::with_authentication(api_token()).unwrap();
     let task = TaskCompletion::from_text("")
@@ -575,10 +575,42 @@ async fn test_streaming_completion() {
 
     // Then there are at least one chunk, one summary and one completion summary
     assert!(events.len() >= 3);
-    assert!(matches!(events[events.len() - 3], Event::StreamChunk(_)));
-    assert!(matches!(events[events.len() - 2], Event::StreamSummary(_)));
+    assert!(matches!(
+        events[events.len() - 3],
+        CompletionEvent::StreamChunk(_)
+    ));
+    assert!(matches!(
+        events[events.len() - 2],
+        CompletionEvent::StreamSummary(_)
+    ));
     assert!(matches!(
         events[events.len() - 1],
-        Event::CompletionSummary(_)
+        CompletionEvent::CompletionSummary(_)
     ));
+}
+
+#[tokio::test]
+async fn stream_chat_with_pharia_1_llm_7b() {
+    // Given a streaming completion task
+    let client = Client::with_authentication(api_token()).unwrap();
+    let message = Message::user("Hello,");
+    let task = TaskChat::with_messages(vec![message])
+        .with_maximum_tokens(7)
+        .with_streaming();
+
+    // When the events are streamed and collected
+    let mut rx = client
+        .stream_chat(&task, "pharia-1-llm-7b-control", &How::default())
+        .await
+        .unwrap();
+
+    let mut events = Vec::new();
+    while let Some(Ok(event)) = rx.recv().await {
+        events.push(event);
+    }
+
+    // Then there are at least two chunks, with the second one having no role
+    assert!(events.len() >= 2);
+    assert_eq!(events[0].delta.role.as_ref().unwrap(), "assistant");
+    assert_eq!(events[1].delta.role, None);
 }

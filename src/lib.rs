@@ -37,6 +37,7 @@ use std::time::Duration;
 
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
+use stream::ChatStreamChunk;
 use tokenizers::Tokenizer;
 use tokio::sync::mpsc;
 
@@ -53,7 +54,10 @@ pub use self::{
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
     },
-    stream::{CompletionSummary, Event, StreamChunk, StreamSummary, TaskStreamCompletion},
+    stream::{
+        ChatEvent, CompletionEvent, CompletionSummary, StreamChunk, StreamSummary, TaskStreamChat,
+        TaskStreamCompletion,
+    },
     tokenization::{TaskTokenization, TokenizationOutput},
 };
 
@@ -197,7 +201,7 @@ impl Client {
     /// Stream the response as a series of events.
     ///
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskCompletion, Error, Event};
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Error, CompletionEvent};
     /// async fn print_stream_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
     ///     let client = Client::with_authentication("AA_API_TOKEN")?;
@@ -213,7 +217,7 @@ impl Client {
     ///     // Retrieve stream from API
     ///     let mut response = client.stream_completion(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = response.recv().await {
-    ///         if let Event::StreamChunk(chunk) = event {
+    ///         if let CompletionEvent::StreamChunk(chunk) = event {
     ///             println!("{}", chunk.completion);
     ///         }
     ///     }
@@ -225,7 +229,7 @@ impl Client {
         task: &TaskStreamCompletion<'_>,
         model: &str,
         how: &How,
-    ) -> Result<mpsc::Receiver<Result<Event, Error>>, Error> {
+    ) -> Result<mpsc::Receiver<Result<CompletionEvent, Error>>, Error> {
         self.http_client
             .stream_output_of(&task.with_model(model), how)
             .await
@@ -262,6 +266,18 @@ impl Client {
     ) -> Result<ChatOutput, Error> {
         self.http_client
             .output_of(&task.with_model(model), how)
+            .await
+    }
+
+    /// Send a chat message to a model. Stream the response as a series of events.
+    pub async fn stream_chat(
+        &self,
+        task: &TaskStreamChat<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<mpsc::Receiver<Result<ChatStreamChunk, Error>>, Error> {
+        self.http_client
+            .stream_output_of(&task.with_model(model), how)
             .await
     }
 

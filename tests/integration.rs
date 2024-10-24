@@ -1,8 +1,8 @@
 use std::{fs::File, io::BufReader, sync::OnceLock};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Modality, Prompt,
-    PromptGranularity, Role, Sampling, SemanticRepresentation, Stopping, Task,
+    cosine_similarity, Client, Granularity, How, ImageScore, ItemExplanation, Message, Modality,
+    Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
     TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
     TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
@@ -21,7 +21,8 @@ fn api_token() -> &'static str {
 #[tokio::test]
 async fn chat_with_pharia_1_7b_base() {
     // When
-    let task = TaskChat::new(Role::System, "Instructions").append_message(Role::User, "Question");
+    let message = Message::user("Question");
+    let task = TaskChat::with_message(message);
 
     let model = "pharia-1-llm-7b-control";
     let client = Client::with_authentication(api_token()).unwrap();

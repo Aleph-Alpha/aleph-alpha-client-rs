@@ -61,6 +61,17 @@ impl<'a> TaskChat<'a> {
         }
     }
 
+    /// Creates a new TaskChat containing the given messages.
+    /// All optional TaskChat attributes are left unset.
+    pub fn with_messages(messages: Vec<Message<'a>>) -> Self {
+        TaskChat {
+            messages,
+            maximum_tokens: None,
+            temperature: None,
+            top_p: None,
+        }
+    }
+
     /// Pushes a new Message to this TaskChat.
     pub fn push_message(mut self, message: Message<'a>) -> Self {
         self.messages.push(message);

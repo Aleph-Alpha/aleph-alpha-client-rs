@@ -39,7 +39,7 @@ use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 use tokenizers::Tokenizer;
 
 pub use self::{
-    chat::{ChatOutput, Message, Role, TaskChat},
+    chat::{ChatOutput, Message, TaskChat},
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
@@ -192,7 +192,7 @@ impl Client {
 
     /// Send a chat message to a model.
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Role};
+    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message};
     ///
     /// async fn chat() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
@@ -202,7 +202,8 @@ impl Client {
     ///     let model = "pharia-1-llm-7b-control";
     ///
     ///     // Create a chat task with a user message.
-    ///     let task = TaskChat::new(Role::User, "Hello, how are you?");
+    ///     let message = Message::user("Hello, how are you?");
+    ///     let task = TaskChat::with_message(message);
     ///
     ///     // Send the message to the model.
     ///     let response = client.chat(&task, model, &How::default()).await?;
@@ -212,7 +213,12 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn chat(&self, task: &TaskChat<'_>, model: &str, how: &How) -> Result<ChatOutput, Error> {
+    pub async fn chat<'a>(
+        &'a self,
+        task: &'a TaskChat<'a>,
+        model: &'a str,
+        how: &'a How,
+    ) -> Result<ChatOutput, Error> {
         self.http_client
             .output_of(&task.with_model(model), how)
             .await

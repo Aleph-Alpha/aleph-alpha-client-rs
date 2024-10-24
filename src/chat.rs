@@ -5,17 +5,27 @@ use serde::{Deserialize, Serialize};
 use crate::Task;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum Role {
-    System,
-    User,
-    Assistant,
+pub struct Message<'a> {
+    pub role: Cow<'a, str>,
+    pub content: Cow<'a, str>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Message<'a> {
-    pub role: Role,
-    pub content: Cow<'a, str>,
+impl<'a> Message<'a> {
+    pub fn new(role: impl Into<Cow<'a, str>>, content: impl Into<Cow<'a, str>>) -> Self {
+        Self {
+            role: role.into(),
+            content: content.into(),
+        }
+    }
+    pub fn user(content: impl Into<Cow<'a, str>>) -> Self {
+        Self::new("user", content)
+    }
+    pub fn assistant(content: impl Into<Cow<'a, str>>) -> Self {
+        Self::new("assistant", content)
+    }
+    pub fn system(content: impl Into<Cow<'a, str>>) -> Self {
+        Self::new("system", content)
+    }
 }
 
 pub struct TaskChat<'a> {
@@ -42,12 +52,9 @@ pub struct TaskChat<'a> {
 impl<'a> TaskChat<'a> {
     /// Creates a new TaskChat containing one message with the given role and content.
     /// All optional TaskChat attributes are left unset.
-    pub fn new(role: Role, content: impl Into<Cow<'a, str>>) -> Self {
+    pub fn with_message(message: Message<'a>) -> Self {
         TaskChat {
-            messages: vec![Message {
-                role,
-                content: content.into(),
-            }],
+            messages: vec![message],
             maximum_tokens: None,
             temperature: None,
             top_p: None,
@@ -55,11 +62,8 @@ impl<'a> TaskChat<'a> {
     }
 
     /// Pushes a new Message to this TaskChat.
-    pub fn append_message(mut self, role: Role, content: impl Into<Cow<'a, str>>) -> Self {
-        self.messages.push(Message {
-            role,
-            content: content.into(),
-        });
+    pub fn push_message(mut self, message: Message<'a>) -> Self {
+        self.messages.push(message);
         self
     }
 

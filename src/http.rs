@@ -1,11 +1,13 @@
 use std::{borrow::Cow, time::Duration};
 
-use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
+use futures_util::stream::StreamExt;
+use reqwest::{header, ClientBuilder, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 use tokenizers::Tokenizer;
+use tokio::sync::mpsc;
 
-use crate::How;
+use crate::{stream::parse_stream_event, How};
 
 /// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
 /// for the Aleph Alpha API to specify its result. Notably it includes the model(s) the job is
@@ -16,34 +18,34 @@ use crate::How;
 /// [`Task::with_model`].
 pub trait Job {
     /// Output returned by [`crate::Client::output_of`]
-    type Output;
+    type Output: Send;
 
     /// Expected answer of the Aleph Alpha API
-    type ResponseBody: for<'de> Deserialize<'de>;
+    type ResponseBody: for<'de> Deserialize<'de> + Send;
 
     /// Prepare the request for the Aleph Alpha API. Authentication headers can be assumed to be
     /// already set.
     fn build_request(&self, client: &reqwest::Client, base: &str) -> RequestBuilder;
 
     /// Parses the response of the server into higher level structs for the user.
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output;
 }
 
 /// A task send to the Aleph Alpha Api using the http client. Requires to specify a model before it
 /// can be executed.
 pub trait Task {
     /// Output returned by [`crate::Client::output_of`]
-    type Output;
+    type Output: Send;
 
     /// Expected answer of the Aleph Alpha API
-    type ResponseBody: for<'de> Deserialize<'de>;
+    type ResponseBody: for<'de> Deserialize<'de> + Send;
 
     /// Prepare the request for the Aleph Alpha API. Authentication headers can be assumed to be
     /// already set.
     fn build_request(&self, client: &reqwest::Client, base: &str, model: &str) -> RequestBuilder;
 
     /// Parses the response of the server into higher level structs for the user.
-    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output;
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output;
 
     /// Turn your task into [`Job`] by annotating it with a model name.
     fn with_model<'a>(&'a self, model: &'a str) -> MethodJob<'a, Self>
@@ -75,8 +77,8 @@ where
         self.task.build_request(client, base, self.model)
     }
 
-    fn body_to_output(&self, response: T::ResponseBody) -> T::Output {
-        self.task.body_to_output(response)
+    fn body_to_output(response: T::ResponseBody) -> T::Output {
+        T::body_to_output(response)
     }
 }
 
@@ -98,6 +100,37 @@ impl HttpClient {
             http,
             api_token,
         })
+    }
+
+    /// Execute a task with the aleph alpha API and return the response without awaiting the body.
+    pub async fn request<T: Job>(&self, task: &T, how: &How) -> Result<Response, Error> {
+        let query = if how.be_nice {
+            [("nice", "true")].as_slice()
+        } else {
+            // nice=false is default, so we just omit it.
+            [].as_slice()
+        };
+
+        let api_token = how
+            .api_token
+            .as_ref()
+            .or(self.api_token.as_ref())
+            .expect("API token needs to be set on client construction or per request");
+        let response = task
+            .build_request(&self.http, &self.base)
+            .query(query)
+            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
+            .timeout(how.client_timeout)
+            .send()
+            .await
+            .map_err(|reqwest_error| {
+                if reqwest_error.is_timeout() {
+                    Error::ClientTimeout(how.client_timeout)
+                } else {
+                    reqwest_error.into()
+                }
+            })?;
+        translate_http_error(response).await
     }
 
     /// Execute a task with the aleph alpha API and fetch its result.
@@ -126,36 +159,41 @@ impl HttpClient {
     /// }
     /// ```
     pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
-        let query = if how.be_nice {
-            [("nice", "true")].as_slice()
-        } else {
-            // nice=false is default, so we just omit it.
-            [].as_slice()
-        };
-
-        let api_token = how
-            .api_token
-            .as_ref()
-            .or(self.api_token.as_ref())
-            .expect("API token needs to be set on client construction or per request");
-        let response = task
-            .build_request(&self.http, &self.base)
-            .query(query)
-            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
-            .timeout(how.client_timeout)
-            .send()
-            .await
-            .map_err(|reqwest_error| {
-                if reqwest_error.is_timeout() {
-                    Error::ClientTimeout(how.client_timeout)
-                } else {
-                    reqwest_error.into()
-                }
-            })?;
-        let response = translate_http_error(response).await?;
+        let response = self.request(task, how).await?;
         let response_body: T::ResponseBody = response.json().await?;
-        let answer = task.body_to_output(response_body);
+        let answer = T::body_to_output(response_body);
         Ok(answer)
+    }
+
+    pub async fn stream_output_of<T: Job>(
+        &self,
+        task: &T,
+        how: &How,
+    ) -> Result<mpsc::Receiver<Result<T::Output, Error>>, Error>
+    where
+        T::Output: 'static,
+    {
+        let response = self.request(task, how).await?;
+        let mut stream = response.bytes_stream();
+
+        let (tx, rx) = mpsc::channel::<Result<T::Output, Error>>(100);
+        tokio::spawn(async move {
+            while let Some(item) = stream.next().await {
+                match item {
+                    Ok(bytes) => {
+                        let events = parse_stream_event::<T::ResponseBody>(bytes.as_ref());
+                        for event in events {
+                            let output = event.map(|b| T::body_to_output(b));
+                            tx.send(output).await.unwrap();
+                        }
+                    }
+                    Err(e) => {
+                        tx.send(Err(e.into())).await.unwrap();
+                    }
+                }
+            }
+        });
+        Ok(rx)
     }
 
     fn header_from_token(api_token: &str) -> header::HeaderValue {
@@ -264,6 +302,11 @@ pub enum Error {
         deserialization_error
     )]
     InvalidTokenizer { deserialization_error: String },
+    /// Deserialization error of the stream event.
+    #[error(
+        "Stream event could not be correctly deserialized. Caused by:\n{cause}. Event:\n{event}"
+    )]
+    StreamDeserializationError { cause: String, event: String },
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
     Other(#[from] reqwest::Error),

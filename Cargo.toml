@@ -12,15 +12,16 @@ categories = ["api-bindings"]
 
 [dependencies]
 base64 = "0.22.0"
+futures-util = "0.3.31"
 image = "0.25.1"
 itertools = "0.13.0"
-reqwest = { version = "0.12.3", features = ["json"] }
+reqwest = { version = "0.12.3", features = ["json", "stream"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 thiserror = "1.0.58"
 tokenizers = { version = "0.20.0", default-features = false, features = ["onig", "esaxx_fast"] }
+tokio = { version = "1.37.0", features = ["rt", "macros"] }
 
 [dev-dependencies]
 dotenv = "0.15.0"
-tokio = { version = "1.37.0", features = ["rt", "macros"] }
 wiremock = "0.6.0"

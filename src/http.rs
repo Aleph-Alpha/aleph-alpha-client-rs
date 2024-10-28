@@ -1,11 +1,13 @@
-use std::{borrow::Cow, time::Duration};
+use std::{borrow::Cow, pin::Pin, time::Duration};
 
-use reqwest::{header, ClientBuilder, RequestBuilder, StatusCode};
+use futures_util::{stream::StreamExt, Stream};
+use reqwest::{header, ClientBuilder, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 use tokenizers::Tokenizer;
 
-use crate::How;
+use crate::{How, StreamJob};
+use async_stream::stream;
 
 /// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
 /// for the Aleph Alpha API to specify its result. Notably it includes the model(s) the job is
@@ -100,6 +102,36 @@ impl HttpClient {
         })
     }
 
+    /// Construct and execute a request building on top of a `RequestBuilder`
+    async fn response(&self, builder: RequestBuilder, how: &How) -> Result<Response, Error> {
+        let query = if how.be_nice {
+            [("nice", "true")].as_slice()
+        } else {
+            // nice=false is default, so we just omit it.
+            [].as_slice()
+        };
+
+        let api_token = how
+            .api_token
+            .as_ref()
+            .or(self.api_token.as_ref())
+            .expect("API token needs to be set on client construction or per request");
+        let response = builder
+            .query(query)
+            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
+            .timeout(how.client_timeout)
+            .send()
+            .await
+            .map_err(|reqwest_error| {
+                if reqwest_error.is_timeout() {
+                    Error::ClientTimeout(how.client_timeout)
+                } else {
+                    reqwest_error.into()
+                }
+            })?;
+        translate_http_error(response).await
+    }
+
     /// Execute a task with the aleph alpha API and fetch its result.
     ///
     /// ```no_run
@@ -126,36 +158,57 @@ impl HttpClient {
     /// }
     /// ```
     pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {
-        let query = if how.be_nice {
-            [("nice", "true")].as_slice()
-        } else {
-            // nice=false is default, so we just omit it.
-            [].as_slice()
-        };
-
-        let api_token = how
-            .api_token
-            .as_ref()
-            .or(self.api_token.as_ref())
-            .expect("API token needs to be set on client construction or per request");
-        let response = task
-            .build_request(&self.http, &self.base)
-            .query(query)
-            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
-            .timeout(how.client_timeout)
-            .send()
-            .await
-            .map_err(|reqwest_error| {
-                if reqwest_error.is_timeout() {
-                    Error::ClientTimeout(how.client_timeout)
-                } else {
-                    reqwest_error.into()
-                }
-            })?;
-        let response = translate_http_error(response).await?;
+        let builder = task.build_request(&self.http, &self.base);
+        let response = self.response(builder, how).await?;
         let response_body: T::ResponseBody = response.json().await?;
         let answer = task.body_to_output(response_body);
         Ok(answer)
+    }
+
+    pub async fn stream_output_of<T: StreamJob>(
+        &self,
+        task: &T,
+        how: &How,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<T::Output, Error>> + Send>>, Error>
+    where
+        T::Output: 'static,
+    {
+        let builder = task.build_request(&self.http, &self.base);
+        let response = self.response(builder, how).await?;
+        let mut stream = response.bytes_stream();
+
+        Ok(Box::pin(stream! {
+            while let Some(item) = stream.next().await {
+                match item {
+                    Ok(bytes) => {
+                        let events = Self::parse_stream_event::<T::ResponseBody>(bytes.as_ref());
+                        for event in events {
+                            yield event.map(|b| T::body_to_output(b));
+                        }
+                    }
+                    Err(e) => {
+                        yield Err(e.into());
+                    }
+                }
+            }
+        }))
+    }
+
+    /// Take a byte slice (of a SSE) and parse it into a provided response body.
+    /// Each SSE event is expected to contain one or multiple JSON bodies prefixed by `data: `.
+    fn parse_stream_event<StreamBody>(bytes: &[u8]) -> Vec<Result<StreamBody, Error>>
+    where
+        StreamBody: for<'de> Deserialize<'de>,
+    {
+        String::from_utf8_lossy(bytes)
+            .split("data: ")
+            .skip(1)
+            .map(|s| {
+                serde_json::from_str(s).map_err(|e| Error::InvalidStream {
+                    deserialization_error: e.to_string(),
+                })
+            })
+            .collect()
     }
 
     fn header_from_token(api_token: &str) -> header::HeaderValue {
@@ -264,7 +317,87 @@ pub enum Error {
         deserialization_error
     )]
     InvalidTokenizer { deserialization_error: String },
+    /// Deserialization error of the stream event.
+    #[error(
+        "Stream event could not be correctly deserialized. Caused by:\n{}.",
+        deserialization_error
+    )]
+    InvalidStream { deserialization_error: String },
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
     Other(#[from] reqwest::Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{chat::ChatEvent, completion::CompletionEvent};
+
+    use super::*;
+
+    #[test]
+    fn stream_chunk_event_is_parsed() {
+        // Given some bytes
+        let bytes = b"data: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\" The New York Times, May 15\"}\n\n";
+
+        // When they are parsed
+        let events = HttpClient::parse_stream_event::<CompletionEvent>(bytes);
+        let event = events.first().unwrap().as_ref().unwrap();
+
+        // Then the event is a stream chunk
+        match event {
+            CompletionEvent::StreamChunk(chunk) => assert_eq!(chunk.index, 0),
+            _ => panic!("Expected a stream chunk"),
+        }
+    }
+
+    #[test]
+    fn completion_summary_event_is_parsed() {
+        // Given some bytes with a stream summary and a completion summary
+        let bytes = b"data: {\"type\":\"stream_summary\",\"index\":0,\"model_version\":\"2022-04\",\"finish_reason\":\"maximum_tokens\"}\n\ndata: {\"type\":\"completion_summary\",\"num_tokens_prompt_total\":1,\"num_tokens_generated\":7}\n\n";
+
+        // When they are parsed
+        let events = HttpClient::parse_stream_event::<CompletionEvent>(bytes);
+
+        // Then the first event is a stream summary and the last event is a completion summary
+        let first = events.first().unwrap().as_ref().unwrap();
+        match first {
+            CompletionEvent::StreamSummary(summary) => {
+                assert_eq!(summary.finish_reason, "maximum_tokens")
+            }
+            _ => panic!("Expected a completion summary"),
+        }
+        let second = events.last().unwrap().as_ref().unwrap();
+        match second {
+            CompletionEvent::CompletionSummary(summary) => {
+                assert_eq!(summary.num_tokens_generated, 7)
+            }
+            _ => panic!("Expected a completion summary"),
+        }
+    }
+
+    #[test]
+    fn chat_stream_chunk_event_is_parsed() {
+        // Given some bytes
+        let bytes = b"data: {\"id\":\"831e41b4-2382-4b08-990e-0a3859967f43\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"logprobs\":null}],\"created\":1729782822,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+
+        // When they are parsed
+        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let event = events.first().unwrap().as_ref().unwrap();
+
+        // Then the event is a chat stream chunk
+        assert_eq!(event.choices[0].delta.role.as_ref().unwrap(), "assistant");
+    }
+
+    #[test]
+    fn chat_stream_chunk_without_role_is_parsed() {
+        // Given some bytes without a role
+        let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"content\":\"Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.\"},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+
+        // When they are parsed
+        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let event = events.first().unwrap().as_ref().unwrap();
+
+        // Then the event is a chat stream chunk
+        assert_eq!(event.choices[0].delta.content, "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.");
+    }
 }

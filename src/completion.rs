@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Prompt};
+use crate::{http::Task, Prompt, StreamTask};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -142,6 +142,9 @@ struct BodyCompletion<'a> {
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "<[_]>::is_empty")]
     pub completion_bias_inclusion: &'a [&'a str],
+    /// If true, the response will be streamed.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub stream: bool,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -155,7 +158,12 @@ impl<'a> BodyCompletion<'a> {
             top_k: task.sampling.top_k,
             top_p: task.sampling.top_p,
             completion_bias_inclusion: task.sampling.start_with_one_of,
+            stream: false,
         }
+    }
+    pub fn with_streaming(mut self) -> Self {
+        self.stream = true;
+        self
     }
 }
 
@@ -203,5 +211,70 @@ impl Task for TaskCompletion<'_> {
 
     fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
         response.completions.pop().unwrap()
+    }
+}
+
+/// Describes a chunk of a completion stream
+#[derive(Deserialize, Debug)]
+pub struct StreamChunk {
+    /// The index of the stream that this chunk belongs to.
+    /// This is relevant if multiple completion streams are requested (see parameter n).
+    pub index: u32,
+    /// The completion of the stream.
+    pub completion: String,
+}
+
+/// Denotes the end of a completion stream.
+///
+/// The index of the stream that is being terminated is not deserialized.
+/// It is only relevant if multiple completion streams are requested, (see parameter n),
+/// which is not supported by this crate yet.
+#[derive(Deserialize)]
+pub struct StreamSummary {
+    /// Model name and version (if any) of the used model for inference.
+    pub model_version: String,
+    /// The reason why the model stopped generating new tokens.
+    pub finish_reason: String,
+}
+
+/// Denotes the end of all completion streams.
+#[derive(Deserialize)]
+pub struct CompletionSummary {
+    /// Number of tokens combined across all completion tasks.
+    /// In particular, if you set best_of or n to a number larger than 1 then we report the
+    /// combined prompt token count for all best_of or n tasks.
+    pub num_tokens_prompt_total: u32,
+    /// Number of tokens combined across all completion tasks.
+    /// If multiple completions are returned or best_of is set to a value greater than 1 then
+    /// this value contains the combined generated token count.
+    pub num_tokens_generated: u32,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum CompletionEvent {
+    StreamChunk(StreamChunk),
+    StreamSummary(StreamSummary),
+    CompletionSummary(CompletionSummary),
+}
+
+impl StreamTask for TaskCompletion<'_> {
+    type Output = CompletionEvent;
+
+    type ResponseBody = CompletionEvent;
+
+    fn build_request(
+        &self,
+        client: &reqwest::Client,
+        base: &str,
+        model: &str,
+    ) -> reqwest::RequestBuilder {
+        let body = BodyCompletion::new(model, &self).with_streaming();
+        client.post(format!("{base}/complete")).json(&body)
+    }
+
+    fn body_to_output(response: Self::ResponseBody) -> Self::Output {
+        response
     }
 }

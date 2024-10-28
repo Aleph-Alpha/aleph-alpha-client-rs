@@ -31,15 +31,19 @@ mod http;
 mod image_preprocessing;
 mod prompt;
 mod semantic_embedding;
+mod stream;
 mod tokenization;
-use std::time::Duration;
+use std::{pin::Pin, time::Duration};
 
+use futures_util::Stream;
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
 use tokenizers::Tokenizer;
 
 pub use self::{
+    chat::{ChatEvent, ChatStreamChunk},
     chat::{ChatOutput, Message, TaskChat},
+    completion::{CompletionEvent, CompletionSummary, StreamChunk, StreamSummary},
     completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
     detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
@@ -51,6 +55,7 @@ pub use self::{
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
     },
+    stream::{StreamJob, StreamTask},
     tokenization::{TaskTokenization, TokenizationOutput},
 };
 
@@ -186,7 +191,47 @@ impl Client {
         how: &How,
     ) -> Result<CompletionOutput, Error> {
         self.http_client
-            .output_of(&task.with_model(model), how)
+            .output_of(&Task::with_model(task, model), how)
+            .await
+    }
+
+    /// Instruct a model served by the aleph alpha API to continue writing a piece of text.
+    /// Stream the response as a series of events.
+    ///
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Error, CompletionEvent};
+    /// use futures_util::StreamExt;
+    ///
+    /// async fn print_stream_completion() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///
+    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // also slower and more costly.
+    ///     let model = "luminous-base";
+    ///
+    ///     // The task we want to perform. Here we want to continue the sentence: "An apple a day
+    ///     // ..."
+    ///     let task = TaskCompletion::from_text("An apple a day");
+    ///
+    ///     // Retrieve stream from API
+    ///     let mut stream = client.stream_completion(&task, model, &How::default()).await?;
+    ///     while let Some(Ok(event)) = stream.next().await {
+    ///         if let CompletionEvent::StreamChunk(chunk) = event {
+    ///             println!("{}", chunk.completion);
+    ///         }
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn stream_completion(
+        &self,
+        task: &TaskCompletion<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<CompletionEvent, Error>> + Send>>, Error> {
+        self.http_client
+            .stream_output_of(&Task::with_model(task, model), how)
             .await
     }
 
@@ -194,7 +239,7 @@ impl Client {
     /// ```no_run
     /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message};
     ///
-    /// async fn chat() -> Result<(), Error> {
+    /// async fn print_chat() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
     ///     let client = Client::with_authentication("AA_API_TOKEN")?;
     ///
@@ -213,14 +258,49 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn chat<'a>(
-        &'a self,
-        task: &'a TaskChat<'a>,
-        model: &'a str,
-        how: &'a How,
+    pub async fn chat(
+        &self,
+        task: &TaskChat<'_>,
+        model: &str,
+        how: &How,
     ) -> Result<ChatOutput, Error> {
         self.http_client
-            .output_of(&task.with_model(model), how)
+            .output_of(&Task::with_model(task, model), how)
+            .await
+    }
+
+    /// Send a chat message to a model. Stream the response as a series of events.
+    /// ```no_run
+    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message};
+    /// use futures_util::StreamExt;
+    ///
+    /// async fn print_stream_chat() -> Result<(), Error> {
+    ///     // Authenticate against API. Fetches token.
+    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///
+    ///     // Name of a model that supports chat.
+    ///     let model = "pharia-1-llm-7b-control";
+    ///
+    ///     // Create a chat task with a user message.
+    ///     let message = Message::user("Hello, how are you?");
+    ///     let task = TaskChat::with_message(message);
+    ///
+    ///     // Send the message to the model.
+    ///     let mut stream = client.stream_chat(&task, model, &How::default()).await?;
+    ///     while let Some(Ok(event)) = stream.next().await {
+    ///          println!("{}", event.delta.content);
+    ///     }
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn stream_chat(
+        &self,
+        task: &TaskChat<'_>,
+        model: &str,
+        how: &How,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<ChatStreamChunk, Error>> + Send>>, Error> {
+        self.http_client
+            .stream_output_of(&StreamTask::with_model(task, model), how)
             .await
     }
 

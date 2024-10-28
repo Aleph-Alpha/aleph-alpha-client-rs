@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.1...aleph-alpha-client-v0.13.2) (2024-10-28)
+
+
+### Features
+
+* add stream completion method ([c513a36](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/c513a3651879a337e5c8f64abd1a769d067f1f36))
+
 ## [0.13.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.0...aleph-alpha-client-v0.13.1) (2024-10-24)
 
 

@@ -369,9 +369,9 @@ impl Client {
     ///         tokens: true,       // return text-tokens
     ///         token_ids: true,    // return numeric token-ids
     ///     };
-    ///     let respones = client.tokenize(&task, model, &How::default()).await?;
+    ///     let responses = client.tokenize(&task, model, &How::default()).await?;
     ///
-    ///     dbg!(&respones);
+    ///     dbg!(&responses);
     ///     Ok(())
     /// }
     /// ```
@@ -403,9 +403,9 @@ impl Client {
     ///     let task = TaskDetokenization {
     ///         token_ids: &token_ids,
     ///     };
-    ///     let respones = client.detokenize(&task, model, &How::default()).await?;
+    ///     let responses = client.detokenize(&task, model, &How::default()).await?;
     ///
-    ///     dbg!(&respones);
+    ///     dbg!(&responses);
     ///     Ok(())
     /// }
     /// ```

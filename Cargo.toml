@@ -1,6 +1,6 @@
 [package]
 name = "aleph-alpha-client"
-version = "0.13.2"
+version = "0.14.0"
 edition = "2021"
 description = "Interact with large language models provided by the Aleph Alpha API in Rust code"
 license = "MIT"
@@ -20,7 +20,10 @@ reqwest = { version = "0.12.3", features = ["json", "stream"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 thiserror = "2.0.0"
-tokenizers = { version = "0.21.0", default-features = false, features = ["onig", "esaxx_fast"] }
+tokenizers = { version = "0.21.0", default-features = false, features = [
+    "onig",
+    "esaxx_fast",
+] }
 
 [dev-dependencies]
 dotenv = "0.15.0"

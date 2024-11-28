@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.15.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.14.0...aleph-alpha-client-v0.15.0) (2024-11-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* do not hide role behind enum
+
+### Features
+
+* add id to release workflow ([4fb33c2](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/4fb33c20d90f1231bacff148dd15ed69c2c7b1ed))
+* add stream completion method ([c513a36](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/c513a3651879a337e5c8f64abd1a769d067f1f36))
+* add with_messages method to construct TaskChat ([8fc5c10](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/8fc5c10e4b24c351c70c16d0d7405e2a5cc0f4f8))
+* do not hide role behind enum ([6ef29c5](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/6ef29c5d74824b801850021d3c3be550f0502057))
+
 ## [0.14.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.2...aleph-alpha-client-v0.14.0) (2024-11-28)
 
 ### ⚠ BREAKING CHANGES

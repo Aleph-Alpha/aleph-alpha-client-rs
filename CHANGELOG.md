@@ -4,7 +4,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-- Update `tokenizers` dependency to v0.21
+- Update `tokenizers` dependency to v0.21.0 [ed5ea41](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/ed5ea41f5be7f3cc50d1edf86197ee8f5f0ed4c9)
 
 ## [0.13.2](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.1...aleph-alpha-client-v0.13.2) (2024-10-28)
 

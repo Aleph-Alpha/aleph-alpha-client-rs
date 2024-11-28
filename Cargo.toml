@@ -1,6 +1,6 @@
 [package]
 name = "aleph-alpha-client"
-version = "0.13.2"
+version = "0.14.0"
 edition = "2021"
 description = "Interact with large language models provided by the Aleph Alpha API in Rust code"
 license = "MIT"

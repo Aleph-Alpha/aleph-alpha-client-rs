@@ -2,6 +2,18 @@
 
 ## [0.14.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.2...aleph-alpha-client-v0.14.0) (2024-11-28)
 
+
+### ⚠ BREAKING CHANGES
+
+* trigger major version
+
+### Bug Fixes
+
+* release config hopefully ([521e2cc](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/521e2cca6a4e8e6ac4b0a12f9c71709535d6002a))
+* trigger major version ([1f589ab](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/1f589ab3a75dead325a64d57af6e05de846ac9f1))
+
+## [0.14.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.2...aleph-alpha-client-v0.14.0) (2024-11-28)
+
 ### ⚠ BREAKING CHANGES
 
 - Update `tokenizers` dependency to v0.21.0 [ed5ea41](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/ed5ea41f5be7f3cc50d1edf86197ee8f5f0ed4c9)

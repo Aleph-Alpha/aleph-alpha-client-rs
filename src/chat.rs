@@ -207,7 +207,7 @@ impl<'a> StreamTask for TaskChat<'a> {
         base: &str,
         model: &str,
     ) -> reqwest::RequestBuilder {
-        let body = ChatBody::new(model, &self).with_streaming();
+        let body = ChatBody::new(model, self).with_streaming();
         client.post(format!("{base}/chat/completions")).json(&body)
     }
 

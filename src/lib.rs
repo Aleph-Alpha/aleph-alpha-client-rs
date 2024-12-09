@@ -84,8 +84,8 @@ impl Client {
 
     /// Use your on-premise inference with your API token for all requests.
     ///
-    /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet
-    /// you may want to use a different instances for testing.
+    /// In production you typically would want set this to <https://inference-api.pharia.your-company.com>.
+    /// Yet you may want to use a different instance for testing.
     pub fn with_base_url(
         host: impl Into<String>,
         api_token: impl Into<String>,

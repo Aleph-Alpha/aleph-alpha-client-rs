@@ -6,7 +6,7 @@
 //! #[tokio::main(flavor = "current_thread")]
 //! async fn main() {
 //!     // Authenticate against API. Fetches token.
-//!     let client = Client::with_authentication("AA_API_TOKEN").unwrap();
+//!     let client = Client::from_env().unwrap();
 //!
 //!     // Name of the model we we want to use. Large models give usually better answer, but are also
 //!     // more costly.
@@ -33,11 +33,12 @@ mod prompt;
 mod semantic_embedding;
 mod stream;
 mod tokenization;
-use std::{pin::Pin, time::Duration};
-
+use dotenv::dotenv;
 use futures_util::Stream;
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};
+use std::env;
+use std::{pin::Pin, time::Duration};
 use tokenizers::Tokenizer;
 
 pub use self::{
@@ -70,8 +71,7 @@ pub struct Client {
 
 impl Client {
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
-    /// For "normal" client applications you may likely rather use [`Self::with_authentication`] or
-    /// [`Self::with_base_url`].
+    /// For "normal" client applications you may likely rather use [`Self::with_base_url`].
     ///
     /// You may want to only use request based authentication and skip default authentication. This
     /// is useful if writing an application which invokes the client on behalf of many different
@@ -80,11 +80,6 @@ impl Client {
     pub fn new(host: impl Into<String>, api_token: Option<String>) -> Result<Self, Error> {
         let http_client = HttpClient::with_base_url(host.into(), api_token)?;
         Ok(Self { http_client })
-    }
-
-    /// Use the Aleph Alpha SaaS offering with your API token for all requests.
-    pub fn with_authentication(api_token: impl Into<String>) -> Result<Self, Error> {
-        Self::with_base_url("https://api.aleph-alpha.com", api_token)
     }
 
     /// Use your on-premise inference with your API token for all requests.
@@ -98,6 +93,13 @@ impl Client {
         Self::new(host, Some(api_token.into()))
     }
 
+    pub fn from_env() -> Result<Self, Error> {
+        let _ = dotenv();
+        let api_token = env::var("AA_API_TOKEN").unwrap();
+        let base_url = env::var("AA_BASE_URL").unwrap();
+        Self::with_base_url(base_url, api_token)
+    }
+
     /// Execute a task with the aleph alpha API and fetch its result.
     ///
     /// ```no_run
@@ -105,7 +107,7 @@ impl Client {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -169,7 +171,7 @@ impl Client {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -207,7 +209,7 @@ impl Client {
     ///
     /// async fn print_stream_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -244,7 +246,7 @@ impl Client {
     ///
     /// async fn print_chat() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of a model that supports chat.
     ///     let model = "pharia-1-llm-7b-control";
@@ -279,7 +281,7 @@ impl Client {
     ///
     /// async fn print_stream_chat() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of a model that supports chat.
     ///     let model = "pharia-1-llm-7b-control";
@@ -315,7 +317,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error, Granularity, TaskExplanation, Stopping, Prompt, Sampling};
     ///
     /// async fn print_explanation() -> Result<(), Error> {
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
@@ -359,7 +361,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, Error, How, TaskTokenization};
     ///
     /// async fn tokenize() -> Result<(), Error> {
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model for which we want to tokenize text.
     ///     let model = "luminous-base";
@@ -395,7 +397,7 @@ impl Client {
     /// use aleph_alpha_client::{Client, Error, How, TaskDetokenization};
     ///
     /// async fn detokenize() -> Result<(), Error> {
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Specify the name of the model whose tokenizer was used to generate the input token ids.
     ///     let model = "luminous-base";

@@ -139,7 +139,7 @@ impl HttpClient {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.

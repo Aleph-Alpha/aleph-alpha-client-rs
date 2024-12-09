@@ -77,21 +77,24 @@ impl Client {
     /// is useful if writing an application which invokes the client on behalf of many different
     /// users. Having neither request, nor default authentication is considered a bug and will cause
     /// a panic.
-    pub fn new(host: String, api_token: Option<String>) -> Result<Self, Error> {
-        let http_client = HttpClient::with_base_url(host, api_token)?;
+    pub fn new(host: impl Into<String>, api_token: Option<String>) -> Result<Self, Error> {
+        let http_client = HttpClient::with_base_url(host.into(), api_token)?;
         Ok(Self { http_client })
     }
 
     /// Use the Aleph Alpha SaaS offering with your API token for all requests.
     pub fn with_authentication(api_token: impl Into<String>) -> Result<Self, Error> {
-        Self::with_base_url("https://api.aleph-alpha.com".to_owned(), api_token)
+        Self::with_base_url("https://api.aleph-alpha.com", api_token)
     }
 
     /// Use your on-premise inference with your API token for all requests.
     ///
     /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet
     /// you may want to use a different instances for testing.
-    pub fn with_base_url(host: String, api_token: impl Into<String>) -> Result<Self, Error> {
+    pub fn with_base_url(
+        host: impl Into<String>,
+        api_token: impl Into<String>,
+    ) -> Result<Self, Error> {
         Self::new(host, Some(api_token.into()))
     }
 

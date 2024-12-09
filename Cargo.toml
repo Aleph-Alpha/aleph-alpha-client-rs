@@ -13,6 +13,7 @@ categories = ["api-bindings"]
 [dependencies]
 async-stream = "0.3.6"
 base64 = "0.22.0"
+dotenv = "0.15.0"
 futures-util = "0.3.31"
 image = "0.25.1"
 itertools = "0.13.0"
@@ -26,6 +27,5 @@ tokenizers = { version = "0.21.0", default-features = false, features = [
 ] }
 
 [dev-dependencies]
-dotenv = "0.15.0"
 tokio = { version = "1.37.0", features = ["rt", "macros"] }
 wiremock = "0.6.0"

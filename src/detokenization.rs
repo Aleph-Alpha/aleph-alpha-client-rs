@@ -34,7 +34,7 @@ impl From<ResponseDetokenization> for DetokenizationOutput {
     }
 }
 
-impl<'a> Task for TaskDetokenization<'a> {
+impl Task for TaskDetokenization<'_> {
     type Output = DetokenizationOutput;
     type ResponseBody = ResponseDetokenization;
 

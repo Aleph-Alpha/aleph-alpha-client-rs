@@ -149,7 +149,7 @@ impl<'a> ChatBody<'a> {
     }
 }
 
-impl<'a> Task for TaskChat<'a> {
+impl Task for TaskChat<'_> {
     type Output = ChatOutput;
 
     type ResponseBody = ResponseChat;
@@ -196,7 +196,7 @@ pub struct ChatEvent {
     pub choices: Vec<ChatStreamChunk>,
 }
 
-impl<'a> StreamTask for TaskChat<'a> {
+impl StreamTask for TaskChat<'_> {
     type Output = ChatStreamChunk;
 
     type ResponseBody = ChatEvent;
@@ -207,7 +207,7 @@ impl<'a> StreamTask for TaskChat<'a> {
         base: &str,
         model: &str,
     ) -> reqwest::RequestBuilder {
-        let body = ChatBody::new(model, &self).with_streaming();
+        let body = ChatBody::new(model, self).with_streaming();
         client.post(format!("{base}/chat/completions")).json(&body)
     }
 

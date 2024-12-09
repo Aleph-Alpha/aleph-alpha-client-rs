@@ -62,6 +62,31 @@ async fn completion_with_luminous_base() {
 }
 
 #[tokio::test]
+async fn raw_completion_includes_python_tag() {
+    // When
+    let task = TaskCompletion::from_text(
+        "<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+Environment: ipython<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+Write code to check if number is prime, use that to see if the number 7 is prime<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+    )
+    .with_maximum_tokens(30)
+    .with_raw_completion();
+
+    let model = "llama-3.1-8b-instruct";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+    dbg!(&response.completion);
+    dbg!(&response.raw_completion);
+    assert!(response.completion.trim().starts_with("def"));
+    assert!(response.raw_completion.trim().starts_with("<|python_tag|>"));
+}
+
+#[tokio::test]
 async fn request_authentication_has_priority() {
     let bad_pharia_ai_token = "DUMMY";
     let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);

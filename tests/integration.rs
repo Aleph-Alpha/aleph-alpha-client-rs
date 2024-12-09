@@ -19,6 +19,15 @@ fn api_token() -> &'static str {
     })
 }
 
+fn base_url() -> &'static str {
+    static AA_BASE_URL: OnceLock<String> = OnceLock::new();
+    AA_BASE_URL.get_or_init(|| {
+        drop(dotenv());
+        std::env::var("AA_BASE_URL")
+            .expect("AA_BASE_URL environment variable must be specified to run tests.")
+    })
+}
+
 #[tokio::test]
 async fn chat_with_pharia_1_7b_base() {
     // When
@@ -26,7 +35,7 @@ async fn chat_with_pharia_1_7b_base() {
     let task = TaskChat::with_message(message);
 
     let model = "pharia-1-llm-7b-control";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client.chat(&task, model, &How::default()).await.unwrap();
 
     // Then
@@ -39,7 +48,7 @@ async fn completion_with_luminous_base() {
     let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -57,7 +66,7 @@ async fn request_authentication_has_priority() {
     let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     let model = "luminous-base";
-    let client = Client::with_authentication(bad_aa_api_token).unwrap();
+    let client = Client::with_base_url(base_url(), bad_aa_api_token).unwrap();
     let response = client
         .output_of(
             &task.with_model(model),
@@ -82,7 +91,7 @@ async fn authentication_only_per_request() {
     let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     // When
-    let client = Client::new("https://api.aleph-alpha.com".to_owned(), None).unwrap();
+    let client = Client::new(base_url().to_owned(), None).unwrap();
     let response = client
         .output_of(
             &task.with_model(model),
@@ -106,7 +115,7 @@ async fn must_panic_if_authentication_is_missing() {
     let task = TaskCompletion::from_text("Hello").with_maximum_tokens(1);
 
     // When
-    let client = Client::new("https://api.aleph-alpha.com".to_owned(), None).unwrap();
+    let client = Client::new(base_url().to_owned(), None).unwrap();
     client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -130,7 +139,7 @@ async fn semanitc_search_with_luminous_base() {
         temperature, traditionally in a wood-fired oven.",
     );
     let query = Prompt::from_text("What is Pizza?");
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let robot_embedding_task = TaskSemanticEmbedding {
@@ -193,7 +202,7 @@ async fn complete_structured_prompt() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -222,7 +231,7 @@ async fn maximum_tokens_none_request() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -243,7 +252,7 @@ async fn explain_request() {
         target: " How is it going?",
         granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Sentence),
     };
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let response = client
@@ -273,7 +282,7 @@ async fn explain_request_with_auto_granularity() {
         target: " How is it going?",
         granularity: Granularity::default(),
     };
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let response = client
@@ -305,7 +314,7 @@ async fn explain_request_with_image_modality() {
         target: " a cat.",
         granularity: Granularity::default().with_prompt_granularity(PromptGranularity::Paragraph),
     };
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let response = client
@@ -355,7 +364,7 @@ async fn describe_image_starting_from_a_path() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -384,7 +393,7 @@ async fn describe_image_starting_from_a_dyn_image() {
         sampling: Sampling::MOST_LIKELY,
     };
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -410,7 +419,7 @@ async fn only_answer_with_specific_animal() {
         },
     };
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -437,7 +446,7 @@ async fn answer_should_continue() {
         },
     };
     let model = "luminous-base";
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -464,7 +473,7 @@ async fn batch_semanitc_embed_with_luminous_base() {
         temperature, traditionally in a wood-fired oven.",
     );
 
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let embedding_task = TaskBatchSemanticEmbedding {
@@ -489,7 +498,7 @@ async fn tokenization_with_luminous_base() {
     // Given
     let input = "Hello, World!";
 
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let task1 = TaskTokenization::new(input, false, true);
@@ -526,7 +535,7 @@ async fn detokenization_with_luminous_base() {
     // Given
     let input = vec![49222, 15, 5390, 4];
 
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let task = TaskDetokenization { token_ids: &input };
@@ -543,7 +552,7 @@ async fn detokenization_with_luminous_base() {
 #[tokio::test]
 async fn fetch_tokenizer_for_pharia_1_llm_7b() {
     // Given
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
 
     // When
     let tokenizer = client
@@ -558,7 +567,7 @@ async fn fetch_tokenizer_for_pharia_1_llm_7b() {
 #[tokio::test]
 async fn stream_completion() {
     // Given a streaming completion task
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let task = TaskCompletion::from_text("").with_maximum_tokens(7);
 
     // When the events are streamed and collected
@@ -591,7 +600,7 @@ async fn stream_completion() {
 #[tokio::test]
 async fn stream_chat_with_pharia_1_llm_7b() {
     // Given a streaming completion task
-    let client = Client::with_authentication(api_token()).unwrap();
+    let client = Client::with_base_url(base_url(), api_token()).unwrap();
     let message = Message::user("Hello,");
     let task = TaskChat::with_messages(vec![message]).with_maximum_tokens(7);
 

@@ -270,7 +270,7 @@ impl StreamTask for TaskCompletion<'_> {
         base: &str,
         model: &str,
     ) -> reqwest::RequestBuilder {
-        let body = BodyCompletion::new(model, &self).with_streaming();
+        let body = BodyCompletion::new(model, self).with_streaming();
         client.post(format!("{base}/complete")).json(&body)
     }
 

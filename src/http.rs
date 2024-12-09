@@ -65,7 +65,7 @@ pub struct MethodJob<'a, T> {
     pub task: &'a T,
 }
 
-impl<'a, T> Job for MethodJob<'a, T>
+impl<T> Job for MethodJob<'_, T>
 where
     T: Task,
 {

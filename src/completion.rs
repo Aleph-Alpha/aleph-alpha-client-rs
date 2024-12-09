@@ -94,7 +94,7 @@ pub struct Stopping<'a> {
     pub stop_sequences: &'a [&'a str],
 }
 
-impl<'a> Stopping<'a> {
+impl Stopping<'_> {
     /// Only stop once the model reaches its technical limit, usually the context window.
     pub const NO_TOKEN_LIMIT: Self = Stopping {
         maximum_tokens: None,

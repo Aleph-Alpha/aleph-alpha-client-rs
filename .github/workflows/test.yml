@@ -7,14 +7,26 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  lints:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build
-    - name: Run tests
-      env:
-        AA_API_TOKEN: ${{ secrets.AA_API_TOKEN }}
-        AA_BASE_URL: ${{ secrets.AA_BASE_URL }}
-      run: cargo test
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt -- --check
+      - run: cargo clippy -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build
+      - name: Run tests
+        env:
+          AA_API_TOKEN: ${{ secrets.AA_API_TOKEN }}
+          AA_BASE_URL: ${{ secrets.AA_BASE_URL }}
+        run: cargo test

@@ -14,7 +14,7 @@ pub struct TaskTokenization<'a> {
 }
 
 impl<'a> From<&'a str> for TaskTokenization<'a> {
-    fn from(prompt: &'a str) -> TaskTokenization {
+    fn from(prompt: &str) -> TaskTokenization {
         TaskTokenization {
             prompt,
             tokens: true,

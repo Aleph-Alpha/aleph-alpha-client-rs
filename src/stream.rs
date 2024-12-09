@@ -50,7 +50,7 @@ pub trait StreamTask {
     }
 }
 
-impl<'a, T> StreamJob for MethodJob<'a, T>
+impl<T> StreamJob for MethodJob<'_, T>
 where
     T: StreamTask,
 {

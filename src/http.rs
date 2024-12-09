@@ -65,7 +65,7 @@ pub struct MethodJob<'a, T> {
     pub task: &'a T,
 }
 
-impl<'a, T> Job for MethodJob<'a, T>
+impl<T> Job for MethodJob<'_, T>
 where
     T: Task,
 {
@@ -90,8 +90,8 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
-    /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet you
-    /// may want to use a different instances for testing.
+    /// In production you typically would want set this to <https://inference-api.pharia.your-company.com>.
+    /// Yet you may want to use a different instance for testing.
     pub fn with_base_url(host: String, api_token: Option<String>) -> Result<Self, Error> {
         let http = ClientBuilder::new().build()?;
 
@@ -139,7 +139,7 @@ impl HttpClient {
     ///
     /// async fn print_completion() -> Result<(), Error> {
     ///     // Authenticate against API. Fetches token.
-    ///     let client = Client::with_authentication("AA_API_TOKEN")?;
+    ///     let client = Client::from_env()?;
     ///
     ///     // Name of the model we we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.

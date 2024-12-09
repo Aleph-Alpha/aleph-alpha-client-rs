@@ -90,8 +90,8 @@ pub struct HttpClient {
 }
 
 impl HttpClient {
-    /// In production you typically would want set this to <https://api.aleph-alpha.com>. Yet you
-    /// may want to use a different instances for testing.
+    /// In production you typically would want set this to <https://inference-api.pharia.your-company.com>.
+    /// Yet you may want to use a different instance for testing.
     pub fn with_base_url(host: String, api_token: Option<String>) -> Result<Self, Error> {
         let http = ClientBuilder::new().build()?;
 

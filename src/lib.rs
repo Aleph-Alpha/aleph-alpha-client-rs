@@ -45,7 +45,7 @@ pub use self::{
     chat::{ChatEvent, ChatStreamChunk},
     chat::{ChatOutput, Message, TaskChat},
     completion::{CompletionEvent, CompletionSummary, StreamChunk, StreamSummary},
-    completion::{CompletionOutput, Sampling, Stopping, TaskCompletion},
+    completion::{CompletionOutput, Sampling, Stopping, TaskCompletion, TaskRawCompletion},
     detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
         Explanation, ExplanationOutput, Granularity, ImageScore, ItemExplanation,

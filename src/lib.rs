@@ -95,7 +95,7 @@ impl Client {
 
     pub fn from_env() -> Result<Self, Error> {
         let _ = dotenv();
-        let api_token = env::var("AA_API_TOKEN").unwrap();
+        let api_token = env::var("PHARIA_AI_TOKEN").unwrap();
         let base_url = env::var("AA_BASE_URL").unwrap();
         Self::with_base_url(base_url, api_token)
     }

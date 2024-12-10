@@ -6,7 +6,7 @@ use aleph_alpha_client::{
     TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
     TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use futures_util::StreamExt;
 use image::ImageFormat;
 use std::sync::LazyLock;

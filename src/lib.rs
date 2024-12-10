@@ -129,7 +129,7 @@ impl Client {
         self.output_of(&task.with_model(model), how).await
     }
 
-    /// Execute any task with the aleph alpha API and fetch its result. This is most usefull in
+    /// Execute any task with the aleph alpha API and fetch its result. This is most useful in
     /// generic code then you want to execute arbitrary task types. Otherwise prefer methods taking
     /// concrete tasks like [`Self::completion`] for improved readability.
     pub async fn output_of<T: Job>(&self, task: &T, how: &How) -> Result<T::Output, Error> {

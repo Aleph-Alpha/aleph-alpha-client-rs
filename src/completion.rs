@@ -48,14 +48,13 @@ pub struct Sampling<'a> {
     /// the smallest possible set of tokens whose cumulative probability exceeds the probability
     /// top_p. Set to 0 to get the same behaviour as `None`.
     pub top_p: Option<f64>,
-    /// Only start the completion with one of the following strings. The model will sample
-    /// between these options, and ignore anything else. Once one of the options is generated,
-    /// then the model will continue sampling until one of the stop reasons is reached.
+    /// Only complete with one of the following strings. The model will sample
+    /// between these options, and ignore anything else.
     ///
     /// For example, if trying to get the model to answer "Yes" or "No", and your prompt was
     /// "Can this question be answered?" this could be set to `[" Yes", " No"]`. Note the
     /// space in front of each option, since the model would start with a space character.
-    pub start_with_one_of: &'a [&'a str],
+    pub complete_with_one_of: &'a [&'a str],
 }
 
 impl Sampling<'_> {
@@ -65,7 +64,7 @@ impl Sampling<'_> {
         temperature: None,
         top_k: None,
         top_p: None,
-        start_with_one_of: &[],
+        complete_with_one_of: &[],
     };
 }
 
@@ -157,7 +156,7 @@ impl<'a> BodyCompletion<'a> {
             temperature: task.sampling.temperature,
             top_k: task.sampling.top_k,
             top_p: task.sampling.top_p,
-            completion_bias_inclusion: task.sampling.start_with_one_of,
+            completion_bias_inclusion: task.sampling.complete_with_one_of,
             stream: false,
         }
     }

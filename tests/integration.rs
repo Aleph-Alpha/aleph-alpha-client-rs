@@ -415,7 +415,7 @@ async fn only_answer_with_specific_animal() {
         prompt,
         stopping: Stopping::from_maximum_tokens(1),
         sampling: Sampling {
-            start_with_one_of: &[" dog"],
+            complete_with_one_of: &[" dog"],
             ..Default::default()
         },
     };
@@ -431,7 +431,6 @@ async fn only_answer_with_specific_animal() {
     assert_eq!(response.completion, " dog");
 }
 
-#[should_panic]
 #[tokio::test]
 async fn answer_should_continue() {
     // Given
@@ -442,7 +441,7 @@ async fn answer_should_continue() {
         prompt,
         stopping: Stopping::from_maximum_tokens(20),
         sampling: Sampling {
-            start_with_one_of: &[" Says.", " Art.", " Weekend."],
+            complete_with_one_of: &[" Says.", " Art.", " Weekend."],
             ..Default::default()
         },
     };
@@ -454,9 +453,7 @@ async fn answer_should_continue() {
         .unwrap();
 
     // Then
-    eprintln!("{}", response.completion);
-    assert!(response.completion.starts_with(" Says."));
-    assert!(response.completion.len() > " Says.".len());
+    assert_eq!(response.completion, " Says.");
 }
 
 #[tokio::test]

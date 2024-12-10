@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.15.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.14.0...aleph-alpha-client-v0.15.0) (2024-12-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* add option to ask for special tokens in completion response
+* rename start_with to complete_with
+* clean up naming of methods to setup clients
+* token env is called PHARIA_AI_TOKEN
+* replace from_authentication by new from_env method
+
+### Features
+
+* add option to ask for special tokens in completion response ([1dbcb77](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/1dbcb775fd89da53f9f0c032fb5366b87650a9e7))
+* clean up naming of methods to setup clients ([5f18f38](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/5f18f3854835099f04fc505cdd38ef1cffe24a8a))
+* rename base_url env variable to inference_url ([b9a2fd2](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/b9a2fd2ef9124542bca2f415d7288ab76781b4d9))
+* rename start_with to complete_with ([edd5590](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/edd55901bf82247b31d1e051ed4eca388cb4d6cd))
+* replace from_authentication by new from_env method ([d2da859](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/d2da859cedc6ec2865bc8875d6b7dde2311238a5))
+* token env is called PHARIA_AI_TOKEN ([827b44c](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/827b44c0e39168e8caa10acd90970872645528e8))
+
 ## [0.14.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.13.2...aleph-alpha-client-v0.14.0) (2024-11-28)
 
 ### ⚠ BREAKING CHANGES

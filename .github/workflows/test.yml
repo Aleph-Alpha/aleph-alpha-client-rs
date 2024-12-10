@@ -28,5 +28,5 @@ jobs:
       - name: Run tests
         env:
           PHARIA_AI_TOKEN: ${{ secrets.PHARIA_AI_TOKEN }}
-          AA_BASE_URL: https://inference-api.product.pharia.com
+          INFERENCE_URL: https://inference-api.product.pharia.com
         run: cargo test

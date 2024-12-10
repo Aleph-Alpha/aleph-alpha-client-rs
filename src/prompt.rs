@@ -96,6 +96,7 @@ impl<'a> Modality<'a> {
     ///         ]),
     ///         stopping: Stopping::from_maximum_tokens(10),
     ///         sampling: Sampling::MOST_LIKELY,
+    ///         special_tokens: false,
     ///     };
     ///     // Execute
     ///     let model = "luminous-base";

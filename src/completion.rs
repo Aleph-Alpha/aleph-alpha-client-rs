@@ -11,6 +11,8 @@ pub struct TaskCompletion<'a> {
     pub stopping: Stopping<'a>,
     /// Sampling controls how the tokens ("words") are selected for the completion.
     pub sampling: Sampling<'a>,
+    /// Whether to include special tokens (e.g. <|endoftext|>, <|python_tag|>) in the completion.
+    pub special_tokens: bool,
 }
 
 impl<'a> TaskCompletion<'a> {
@@ -20,6 +22,7 @@ impl<'a> TaskCompletion<'a> {
             prompt: Prompt::from_text(text),
             stopping: Stopping::NO_TOKEN_LIMIT,
             sampling: Sampling::MOST_LIKELY,
+            special_tokens: false,
         }
     }
 
@@ -32,16 +35,13 @@ impl<'a> TaskCompletion<'a> {
         self.stopping.stop_sequences = stop_sequences;
         self
     }
-    pub fn with_raw_completion(self) -> TaskRawCompletion<'a> {
-        TaskRawCompletion(self)
+
+    /// Include special tokens (e.g. <|endoftext|>, <|python_tag|>) in the completion.
+    pub fn with_special_tokens(mut self) -> Self {
+        self.special_tokens = true;
+        self
     }
 }
-
-/// Completes a prompt and returns the raw (non-optimized) completion of the model.
-///
-/// Closely related to [`TaskCompletion`], but returns the raw completion of the model.
-/// You can build a [`TaskRawCompletion`] by calling [`with_raw_completion`] on a [`TaskCompletion`].
-pub struct TaskRawCompletion<'a>(TaskCompletion<'a>);
 
 /// Sampling controls how the tokens ("words") are selected for the completion.
 pub struct Sampling<'a> {
@@ -174,43 +174,26 @@ impl<'a> BodyCompletion<'a> {
             top_p: task.sampling.top_p,
             completion_bias_inclusion: task.sampling.complete_with_one_of,
             stream: false,
-            raw_completion: false,
+            raw_completion: task.special_tokens,
         }
     }
     pub fn with_streaming(mut self) -> Self {
         self.stream = true;
         self
     }
-    pub fn with_raw_completion(mut self) -> Self {
-        self.raw_completion = true;
-        self
-    }
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct ResponseCompletion {
-    pub model_version: String,
-    pub completions: Vec<CompletionOutput>,
+    model_version: String,
+    completions: Vec<DeserializedCompletion>,
 }
 
-impl ResponseCompletion {
-    /// The best completion in the answer.
-    pub fn best(&self) -> &CompletionOutput {
-        self.completions
-            .first()
-            .expect("Response is assumed to always have at least one completion")
-    }
-
-    /// Text of the best completion.
-    pub fn best_text(&self) -> &str {
-        &self.best().completion
-    }
-}
-
-#[derive(Deserialize)]
-pub struct RawCompletionResponse {
-    pub model_version: String,
-    pub completions: Vec<RawCompletionOutput>,
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+struct DeserializedCompletion {
+    completion: String,
+    finish_reason: String,
+    raw_completion: Option<String>,
 }
 
 /// Completion and metainformation returned by a completion task
@@ -236,35 +219,16 @@ impl Task for TaskCompletion<'_> {
     }
 
     fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
-        response.completions.pop().unwrap()
-    }
-}
-
-/// Completion and metainformation returned by a completion task
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct RawCompletionOutput {
-    pub completion: String,
-    pub raw_completion: String,
-    pub finish_reason: String,
-}
-
-impl Task for TaskRawCompletion<'_> {
-    type Output = RawCompletionOutput;
-
-    type ResponseBody = RawCompletionResponse;
-
-    fn build_request(
-        &self,
-        client: &reqwest::Client,
-        base: &str,
-        model: &str,
-    ) -> reqwest::RequestBuilder {
-        let body = BodyCompletion::new(model, &self.0).with_raw_completion();
-        client.post(format!("{base}/complete")).json(&body)
-    }
-
-    fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
-        response.completions.pop().unwrap()
+        let deserialized = response.completions.pop().unwrap();
+        let completion = if self.special_tokens {
+            deserialized.raw_completion.unwrap()
+        } else {
+            deserialized.completion
+        };
+        CompletionOutput {
+            completion,
+            finish_reason: deserialized.finish_reason,
+        }
     }
 }
 

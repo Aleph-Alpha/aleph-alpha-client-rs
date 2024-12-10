@@ -72,7 +72,7 @@ Environment: ipython<|eot_id|><|start_header_id|>user<|end_header_id|>
 Write code to check if number is prime, use that to see if the number 7 is prime<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
     )
     .with_maximum_tokens(30)
-    .with_raw_completion();
+    .with_special_tokens();
 
     let model = "llama-3.1-8b-instruct";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -80,10 +80,7 @@ Write code to check if number is prime, use that to see if the number 7 is prime
         .output_of(&task.with_model(model), &How::default())
         .await
         .unwrap();
-    dbg!(&response.completion);
-    dbg!(&response.raw_completion);
-    assert!(response.completion.trim().starts_with("def"));
-    assert!(response.raw_completion.trim().starts_with("<|python_tag|>"));
+    assert!(response.completion.trim().starts_with("<|python_tag|>"));
 }
 
 #[tokio::test]
@@ -226,6 +223,7 @@ async fn complete_structured_prompt() {
             stop_sequences: &stop_sequences[..],
         },
         sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -255,6 +253,7 @@ async fn maximum_tokens_none_request() {
         prompt: Prompt::from_text(prompt),
         stopping,
         sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -388,6 +387,7 @@ async fn describe_image_starting_from_a_path() {
         ]),
         stopping: Stopping::from_maximum_tokens(10),
         sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -417,6 +417,7 @@ async fn describe_image_starting_from_a_dyn_image() {
         ]),
         stopping: Stopping::from_maximum_tokens(10),
         sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -443,6 +444,7 @@ async fn only_answer_with_specific_animal() {
             complete_with_one_of: &[" dog"],
             ..Default::default()
         },
+        special_tokens: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -469,6 +471,7 @@ async fn answer_should_continue() {
             complete_with_one_of: &[" Says.", " Art.", " Weekend."],
             ..Default::default()
         },
+        special_tokens: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();

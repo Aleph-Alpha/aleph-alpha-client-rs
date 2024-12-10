@@ -34,7 +34,7 @@ async fn completion_with_luminous_base() {
     // When
     let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
-    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let client = Client::with_auth(mock_server.uri(), "dummy-token").unwrap();
     let response = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -74,7 +74,7 @@ async fn detect_rate_limiting() {
     // When
     let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
-    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let client = Client::with_auth(mock_server.uri(), "dummy-token").unwrap();
     let error = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -118,7 +118,7 @@ async fn detect_queue_full() {
     // When
     let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
-    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let client = Client::with_auth(mock_server.uri(), "dummy-token").unwrap();
     let error = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -155,7 +155,7 @@ async fn detect_service_unavailable() {
     // When
     let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
-    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let client = Client::with_auth(mock_server.uri(), "dummy-token").unwrap();
     let error = client
         .output_of(&task.with_model(model), &How::default())
         .await
@@ -177,7 +177,7 @@ async fn be_nice() {
     // When
     let task = TaskCompletion::from_text("Hello,").with_maximum_tokens(1);
     let model = "luminous-base";
-    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let client = Client::with_auth(mock_server.uri(), "dummy-token").unwrap();
     // Drop result, answer is meaningless anyway
     let _ = client
         .output_of(
@@ -206,7 +206,7 @@ async fn client_timeout() {
         .respond_with(ResponseTemplate::new(StatusCode::OK).set_delay(response_time))
         .mount(&mock_server)
         .await;
-    let client = Client::with_base_url(mock_server.uri(), "dummy-token").unwrap();
+    let client = Client::with_auth(mock_server.uri(), "dummy-token").unwrap();
 
     // When
     let result = client

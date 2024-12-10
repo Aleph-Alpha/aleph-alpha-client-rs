@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader, sync::OnceLock};
+use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
     cosine_similarity, Client, CompletionEvent, Granularity, How, ImageScore, ItemExplanation,
@@ -9,23 +9,24 @@ use aleph_alpha_client::{
 use dotenv::dotenv;
 use futures_util::StreamExt;
 use image::ImageFormat;
+use std::sync::LazyLock;
 
 fn pharia_ai_token() -> &'static str {
-    static PHARIA_AI_TOKEN: OnceLock<String> = OnceLock::new();
-    PHARIA_AI_TOKEN.get_or_init(|| {
+    static PHARIA_AI_TOKEN: LazyLock<String> = LazyLock::new(|| {
         drop(dotenv());
         std::env::var("PHARIA_AI_TOKEN")
             .expect("PHARIA_AI_TOKEN environment variable must be specified to run tests.")
-    })
+    });
+    &PHARIA_AI_TOKEN
 }
 
 fn base_url() -> &'static str {
-    static AA_BASE_URL: OnceLock<String> = OnceLock::new();
-    AA_BASE_URL.get_or_init(|| {
+    static AA_BASE_URL: LazyLock<String> = LazyLock::new(|| {
         drop(dotenv());
         std::env::var("AA_BASE_URL")
             .expect("AA_BASE_URL environment variable must be specified to run tests.")
-    })
+    });
+    &AA_BASE_URL
 }
 
 #[tokio::test]

@@ -324,6 +324,7 @@ impl Client {
     ///         prompt: prompt.clone(),
     ///         stopping: Stopping::from_maximum_tokens(10),
     ///         sampling: Sampling::MOST_LIKELY,
+    ///         special_tokens: false,
     ///     };
     ///     let response = client.completion(&task, model, &How::default()).await?;
     ///

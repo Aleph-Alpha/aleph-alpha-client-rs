@@ -1,4 +1,4 @@
-# Avoid commiting AA_API_TOKEN
+# Avoid commiting PHARIA_AI_TOKEN
 .env
 
 /target

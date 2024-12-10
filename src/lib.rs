@@ -71,25 +71,19 @@ pub struct Client {
 
 impl Client {
     /// A new instance of an Aleph Alpha client helping you interact with the Aleph Alpha API.
-    /// For "normal" client applications you may likely rather use [`Self::with_base_url`].
     ///
+    /// Setting the token to None allows specifying it on a per request basis.
     /// You may want to only use request based authentication and skip default authentication. This
     /// is useful if writing an application which invokes the client on behalf of many different
     /// users. Having neither request, nor default authentication is considered a bug and will cause
     /// a panic.
     pub fn new(host: impl Into<String>, api_token: Option<String>) -> Result<Self, Error> {
-        let http_client = HttpClient::with_base_url(host.into(), api_token)?;
+        let http_client = HttpClient::new(host.into(), api_token)?;
         Ok(Self { http_client })
     }
 
-    /// Use your on-premise inference with your API token for all requests.
-    ///
-    /// In production you typically would want set this to <https://inference-api.pharia.your-company.com>.
-    /// Yet you may want to use a different instance for testing.
-    pub fn with_base_url(
-        host: impl Into<String>,
-        api_token: impl Into<String>,
-    ) -> Result<Self, Error> {
+    /// A client instance that always uses the same token for all requests.
+    pub fn with_auth(host: impl Into<String>, api_token: impl Into<String>) -> Result<Self, Error> {
         Self::new(host, Some(api_token.into()))
     }
 
@@ -97,7 +91,7 @@ impl Client {
         let _ = dotenv();
         let api_token = env::var("PHARIA_AI_TOKEN").unwrap();
         let inference_url = env::var("INFERENCE_URL").unwrap();
-        Self::with_base_url(inference_url, api_token)
+        Self::with_auth(inference_url, api_token)
     }
 
     /// Execute a task with the aleph alpha API and fetch its result.

@@ -13,7 +13,7 @@ categories = ["api-bindings"]
 [dependencies]
 async-stream = "0.3.6"
 base64 = "0.22.0"
-dotenv = "0.15.0"
+dotenvy = "0.15.7"
 futures-util = "0.3.31"
 image = "0.25.1"
 itertools = "0.13.0"

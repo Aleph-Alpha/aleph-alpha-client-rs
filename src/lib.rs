@@ -33,7 +33,7 @@ mod prompt;
 mod semantic_embedding;
 mod stream;
 mod tokenization;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use futures_util::Stream;
 use http::HttpClient;
 use semantic_embedding::{BatchSemanticEmbeddingOutput, SemanticEmbeddingOutput};

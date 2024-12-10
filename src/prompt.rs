@@ -81,7 +81,7 @@ impl<'a> Modality<'a> {
     ///
     /// ```no_run
     /// use aleph_alpha_client::{Client, How, Modality, Prompt, Sampling, Stopping, TaskCompletion, Task};
-    /// use dotenv::dotenv;
+    /// use dotenvy::dotenv;
     /// use std::path::PathBuf;
     ///
     /// #[tokio::main(flavor = "current_thread")]

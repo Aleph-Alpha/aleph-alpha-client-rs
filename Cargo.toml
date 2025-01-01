@@ -16,7 +16,7 @@ base64 = "0.22.0"
 dotenvy = "0.15.7"
 futures-util = "0.3.31"
 image = "0.25.1"
-itertools = "0.13.0"
+itertools = "0.14.0"
 reqwest = { version = "0.12.3", features = ["json", "stream"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"

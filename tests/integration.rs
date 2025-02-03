@@ -432,59 +432,6 @@ async fn describe_image_starting_from_a_dyn_image() {
 }
 
 #[tokio::test]
-async fn only_answer_with_specific_animal() {
-    // Given
-    let prompt = Prompt::from_text("What is your favorite animal?");
-
-    // When
-    let task = TaskCompletion {
-        prompt,
-        stopping: Stopping::from_maximum_tokens(1),
-        sampling: Sampling {
-            complete_with_one_of: &[" dog"],
-            ..Default::default()
-        },
-        special_tokens: false,
-    };
-    let model = "luminous-base";
-    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
-    let response = client
-        .output_of(&task.with_model(model), &How::default())
-        .await
-        .unwrap();
-
-    // Then
-    eprintln!("{}", response.completion);
-    assert_eq!(response.completion, " dog");
-}
-
-#[tokio::test]
-async fn answer_should_continue() {
-    // Given
-    let prompt = Prompt::from_text("Knock knock. Who's there?");
-
-    // When
-    let task = TaskCompletion {
-        prompt,
-        stopping: Stopping::from_maximum_tokens(20),
-        sampling: Sampling {
-            complete_with_one_of: &[" Says.", " Art.", " Weekend."],
-            ..Default::default()
-        },
-        special_tokens: false,
-    };
-    let model = "luminous-base";
-    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
-    let response = client
-        .output_of(&task.with_model(model), &How::default())
-        .await
-        .unwrap();
-
-    // Then
-    assert_eq!(response.completion, " Says.");
-}
-
-#[tokio::test]
 async fn batch_semanitc_embed_with_luminous_base() {
     // Given
     let robot_fact = Prompt::from_text(

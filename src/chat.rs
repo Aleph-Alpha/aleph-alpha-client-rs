@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{StreamTask, Task};
+use crate::{Sampling, StreamTask, Task};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Message<'a> {
@@ -39,14 +39,7 @@ pub struct TaskChat<'a> {
     /// The model will generate tokens until it generates one of the specified stop_sequences or it
     /// reaches its technical limit, which usually is its context window.
     pub maximum_tokens: Option<u32>,
-    /// A temperature encourages the model to produce less probable outputs ("be more creative").
-    /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
-    /// response.
-    pub temperature: Option<f64>,
-    /// Introduces random sampling for generated tokens by randomly selecting the next token from
-    /// the smallest possible set of tokens whose cumulative probability exceeds the probability
-    /// top_p. Set to 0 to get the same behaviour as `None`.
-    pub top_p: Option<f64>,
+    pub sampling: Sampling,
 }
 
 impl<'a> TaskChat<'a> {
@@ -56,8 +49,7 @@ impl<'a> TaskChat<'a> {
         TaskChat {
             messages: vec![message],
             maximum_tokens: None,
-            temperature: None,
-            top_p: None,
+            sampling: Sampling::default(),
         }
     }
 
@@ -67,8 +59,7 @@ impl<'a> TaskChat<'a> {
         TaskChat {
             messages,
             maximum_tokens: None,
-            temperature: None,
-            top_p: None,
+            sampling: Sampling::default(),
         }
     }
 
@@ -81,18 +72,6 @@ impl<'a> TaskChat<'a> {
     /// Sets the maximum token attribute of this TaskChat.
     pub fn with_maximum_tokens(mut self, maximum_tokens: u32) -> Self {
         self.maximum_tokens = Some(maximum_tokens);
-        self
-    }
-
-    /// Sets the temperature attribute of this TaskChat.
-    pub fn with_temperature(mut self, temperature: f64) -> Self {
-        self.temperature = Some(temperature);
-        self
-    }
-
-    /// Sets the top_p attribute of this TaskChat.
-    pub fn with_top_p(mut self, top_p: f64) -> Self {
-        self.top_p = Some(top_p);
         self
     }
 }
@@ -137,8 +116,8 @@ impl<'a> ChatBody<'a> {
             model,
             messages: &task.messages,
             maximum_tokens: task.maximum_tokens,
-            temperature: task.temperature,
-            top_p: task.top_p,
+            temperature: task.sampling.temperature,
+            top_p: task.sampling.top_p,
             stream: false,
         }
     }

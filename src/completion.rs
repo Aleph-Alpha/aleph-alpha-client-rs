@@ -10,7 +10,7 @@ pub struct TaskCompletion<'a> {
     /// Controls in which circumstances the model will stop generating new tokens.
     pub stopping: Stopping<'a>,
     /// Sampling controls how the tokens ("words") are selected for the completion.
-    pub sampling: Sampling<'a>,
+    pub sampling: Sampling,
     /// Whether to include special tokens (e.g. <|endoftext|>, <|python_tag|>) in the completion.
     pub special_tokens: bool,
 }
@@ -44,7 +44,7 @@ impl<'a> TaskCompletion<'a> {
 }
 
 /// Sampling controls how the tokens ("words") are selected for the completion.
-pub struct Sampling<'a> {
+pub struct Sampling {
     /// A temperature encourages the model to produce less probable outputs ("be more creative").
     /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
     /// response.
@@ -57,27 +57,19 @@ pub struct Sampling<'a> {
     /// the smallest possible set of tokens whose cumulative probability exceeds the probability
     /// top_p. Set to 0 to get the same behaviour as `None`.
     pub top_p: Option<f64>,
-    /// Only complete with one of the following strings. The model will sample
-    /// between these options, and ignore anything else.
-    ///
-    /// For example, if trying to get the model to answer "Yes" or "No", and your prompt was
-    /// "Can this question be answered?" this could be set to `[" Yes", " No"]`. Note the
-    /// space in front of each option, since the model would start with a space character.
-    pub complete_with_one_of: &'a [&'a str],
 }
 
-impl Sampling<'_> {
+impl Sampling {
     /// Always chooses the token most likely to come next. Choose this if you do want close to
     /// deterministic behaviour and do not want to apply any penalties to avoid repetitions.
     pub const MOST_LIKELY: Self = Sampling {
         temperature: None,
         top_k: None,
         top_p: None,
-        complete_with_one_of: &[],
     };
 }
 
-impl Default for Sampling<'_> {
+impl Default for Sampling {
     fn default() -> Self {
         Self::MOST_LIKELY
     }
@@ -148,8 +140,6 @@ struct BodyCompletion<'a> {
     pub top_k: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
-    #[serde(skip_serializing_if = "<[_]>::is_empty")]
-    pub completion_bias_inclusion: &'a [&'a str],
     /// If true, the response will be streamed.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub stream: bool,
@@ -172,7 +162,6 @@ impl<'a> BodyCompletion<'a> {
             temperature: task.sampling.temperature,
             top_k: task.sampling.top_k,
             top_p: task.sampling.top_p,
-            completion_bias_inclusion: task.sampling.complete_with_one_of,
             stream: false,
             raw_completion: task.special_tokens,
         }

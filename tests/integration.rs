@@ -5,7 +5,7 @@ use aleph_alpha_client::{
     ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
     SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
     TaskDetokenization, TaskExplanation, TaskSemanticEmbedding,
-    TaskSemanticEmbeddingWithInstruction, TaskTokenization, TextScore, Usage,
+    TaskSemanticEmbeddingWithInstruction, TaskTokenization, TextScore, TraceContext, Usage,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -1022,4 +1022,32 @@ async fn show_token_usage_completion() {
     // Then
     assert_eq!(response.usage.prompt_tokens, 5);
     assert_eq!(response.usage.completion_tokens, 3);
+}
+
+#[tokio::test]
+async fn trace_context_is_propagated() {
+    // Given a client with a trace context
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736;
+    let span_id = 0x00f067aa0ba902b7;
+    let trace_context = TraceContext::new(trace_id, span_id, true);
+
+    // When the client is used to make a request
+    let task = TaskCompletion::from_text("Hello, World!");
+
+    // Then the completion succeeds
+    let response = client
+        .completion(
+            &task,
+            "pharia-1-llm-7b-control",
+            &How {
+                trace_context: Some(trace_context),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    // Then the response is non-empty
+    assert!(!response.completion.is_empty());
 }

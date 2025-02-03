@@ -148,7 +148,7 @@ async fn must_panic_if_authentication_is_missing() {
 }
 
 #[tokio::test]
-async fn semanitc_search_with_luminous_base() {
+async fn semantic_search_with_luminous_base() {
     // Given
     let robot_fact = Prompt::from_text(
         "A robot is a machine—especially one programmable by a computer—capable of carrying out a \

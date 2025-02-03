@@ -34,6 +34,7 @@ mod prompt;
 mod semantic_embedding;
 mod stream;
 mod tokenization;
+mod tracing;
 use dotenvy::dotenv;
 use futures_util::Stream;
 use http::HttpClient;
@@ -59,6 +60,7 @@ pub use self::{
     },
     stream::{StreamJob, StreamTask},
     tokenization::{TaskTokenization, TokenizationOutput},
+    tracing::TraceContext,
 };
 
 /// Execute Jobs against the Aleph Alpha API
@@ -466,6 +468,9 @@ pub struct How {
     /// API token used to authenticate the request, overwrites the default token provided on setup
     /// Default token may not provide the tracking or permission that is wanted for the request
     pub api_token: Option<String>,
+
+    /// Optionally pass a trace context to propagate tracing information through distributed systems.
+    pub trace_context: Option<TraceContext>,
 }
 
 impl Default for How {
@@ -478,6 +483,7 @@ impl Default for How {
             // therefore by default we wait slightly longer
             client_timeout: api_timeout + Duration::from_secs(5),
             api_token: None,
+            trace_context: None,
         }
     }
 }

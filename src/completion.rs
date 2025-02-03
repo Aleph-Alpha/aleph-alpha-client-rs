@@ -57,6 +57,11 @@ pub struct Sampling {
     /// the smallest possible set of tokens whose cumulative probability exceeds the probability
     /// top_p. Set to 0 to get the same behaviour as `None`.
     pub top_p: Option<f64>,
+    /// When specified, this number will decrease (or increase) the likelihood of repeating tokens
+    /// that were mentioned prior in the completion. The penalty is cumulative. The more a token
+    /// is mentioned in the completion, the more its probability will decrease.
+    /// A negative value will increase the likelihood of repeating tokens.
+    pub frequency_penalty: Option<f64>,
 }
 
 impl Sampling {
@@ -66,6 +71,7 @@ impl Sampling {
         temperature: None,
         top_k: None,
         top_p: None,
+        frequency_penalty: None,
     };
 }
 
@@ -150,6 +156,8 @@ struct BodyCompletion<'a> {
     /// Setting tokens to true or log_probs to any value will also trigger the raw completion to be returned.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub raw_completion: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_penalty: Option<f64>,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -164,6 +172,7 @@ impl<'a> BodyCompletion<'a> {
             top_p: task.sampling.top_p,
             stream: false,
             raw_completion: task.special_tokens,
+            frequency_penalty: task.sampling.frequency_penalty,
         }
     }
     pub fn with_streaming(mut self) -> Self {

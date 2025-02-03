@@ -105,6 +105,8 @@ struct ChatBody<'a> {
     /// When no value is provided, the default value of 1 will be used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency_penalty: Option<f64>,
     /// Whether to stream the response or not.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub stream: bool,
@@ -118,6 +120,7 @@ impl<'a> ChatBody<'a> {
             max_tokens: task.maximum_tokens,
             temperature: task.sampling.temperature,
             top_p: task.sampling.top_p,
+            frequency_penalty: task.sampling.frequency_penalty,
             stream: false,
         }
     }

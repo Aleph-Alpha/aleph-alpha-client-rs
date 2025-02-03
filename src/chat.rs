@@ -95,7 +95,7 @@ struct ChatBody<'a> {
     messages: &'a [Message<'a>],
     /// Limits the number of tokens, which are generated for the completion.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub maximum_tokens: Option<u32>,
+    pub max_tokens: Option<u32>,
     /// Controls the randomness of the model. Lower values will make the model more deterministic and higher values will make it more random.
     /// Mathematically, the temperature is used to divide the logits before sampling. A temperature of 0 will always return the most likely token.
     /// When no value is provided, the default value of 1 will be used.
@@ -115,7 +115,7 @@ impl<'a> ChatBody<'a> {
         Self {
             model,
             messages: &task.messages,
-            maximum_tokens: task.maximum_tokens,
+            max_tokens: task.maximum_tokens,
             temperature: task.sampling.temperature,
             top_p: task.sampling.top_p,
             stream: false,

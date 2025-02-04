@@ -33,6 +33,7 @@ pub struct TaskChat<'a> {
     pub messages: Vec<Message<'a>>,
     /// Controls in which circumstances the model will stop generating new tokens.
     pub stopping: Stopping<'a>,
+    /// Sampling controls how the tokens ("words") are selected for the completion.
     pub sampling: Sampling,
 }
 

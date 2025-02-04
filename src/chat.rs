@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Sampling, StreamTask, Task};
+use crate::{Sampling, Stopping, StreamTask, Task};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Message<'a> {
@@ -31,14 +31,8 @@ impl<'a> Message<'a> {
 pub struct TaskChat<'a> {
     /// The list of messages comprising the conversation so far.
     pub messages: Vec<Message<'a>>,
-    /// The maximum number of tokens to be generated. Completion will terminate after the maximum
-    /// number of tokens is reached. Increase this value to allow for longer outputs. A text is split
-    /// into tokens. Usually there are more tokens than words. The total number of tokens of prompt
-    /// and maximum_tokens depends on the model.
-    /// If maximum tokens is set to None, no outside limit is opposed on the number of maximum tokens.
-    /// The model will generate tokens until it generates one of the specified stop_sequences or it
-    /// reaches its technical limit, which usually is its context window.
-    pub maximum_tokens: Option<u32>,
+    /// Controls in which circumstances the model will stop generating new tokens.
+    pub stopping: Stopping<'a>,
     pub sampling: Sampling,
 }
 
@@ -46,11 +40,7 @@ impl<'a> TaskChat<'a> {
     /// Creates a new TaskChat containing one message with the given role and content.
     /// All optional TaskChat attributes are left unset.
     pub fn with_message(message: Message<'a>) -> Self {
-        TaskChat {
-            messages: vec![message],
-            maximum_tokens: None,
-            sampling: Sampling::default(),
-        }
+        Self::with_messages(vec![message])
     }
 
     /// Creates a new TaskChat containing the given messages.
@@ -58,8 +48,8 @@ impl<'a> TaskChat<'a> {
     pub fn with_messages(messages: Vec<Message<'a>>) -> Self {
         TaskChat {
             messages,
-            maximum_tokens: None,
             sampling: Sampling::default(),
+            stopping: Stopping::default(),
         }
     }
 
@@ -71,7 +61,7 @@ impl<'a> TaskChat<'a> {
 
     /// Sets the maximum token attribute of this TaskChat.
     pub fn with_maximum_tokens(mut self, maximum_tokens: u32) -> Self {
-        self.maximum_tokens = Some(maximum_tokens);
+        self.stopping.maximum_tokens = Some(maximum_tokens);
         self
     }
 }
@@ -96,6 +86,8 @@ struct ChatBody<'a> {
     /// Limits the number of tokens, which are generated for the completion.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
+    pub stop: &'a [&'a str],
     /// Controls the randomness of the model. Lower values will make the model more deterministic and higher values will make it more random.
     /// Mathematically, the temperature is used to divide the logits before sampling. A temperature of 0 will always return the most likely token.
     /// When no value is provided, the default value of 1 will be used.
@@ -119,7 +111,8 @@ impl<'a> ChatBody<'a> {
         Self {
             model,
             messages: &task.messages,
-            max_tokens: task.maximum_tokens,
+            max_tokens: task.stopping.maximum_tokens,
+            stop: task.stopping.stop_sequences,
             temperature: task.sampling.temperature,
             top_p: task.sampling.top_p,
             frequency_penalty: task.sampling.frequency_penalty,

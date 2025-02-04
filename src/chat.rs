@@ -109,15 +109,36 @@ struct ChatBody<'a> {
 
 impl<'a> ChatBody<'a> {
     pub fn new(model: &'a str, task: &'a TaskChat) -> Self {
+        let TaskChat {
+            messages,
+            stopping:
+                Stopping {
+                    maximum_tokens,
+                    stop_sequences,
+                },
+            sampling:
+                Sampling {
+                    temperature,
+                    top_p,
+                    top_k,
+                    frequency_penalty,
+                    presence_penalty,
+                },
+        } = task;
+
+        if top_k.is_some() {
+            panic!("The top_k parameter is not supported for chat completions.");
+        }
+
         Self {
             model,
-            messages: &task.messages,
-            max_tokens: task.stopping.maximum_tokens,
-            stop: task.stopping.stop_sequences,
-            temperature: task.sampling.temperature,
-            top_p: task.sampling.top_p,
-            frequency_penalty: task.sampling.frequency_penalty,
-            presence_penalty: task.sampling.presence_penalty,
+            messages,
+            max_tokens: *maximum_tokens,
+            stop: stop_sequences,
+            temperature: *temperature,
+            top_p: *top_p,
+            frequency_penalty: *frequency_penalty,
+            presence_penalty: *presence_penalty,
             stream: false,
         }
     }

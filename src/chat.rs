@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Sampling, Stopping, StreamTask, Task};
+use crate::{Stopping, StreamTask, Task};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Message<'a> {
@@ -34,7 +34,7 @@ pub struct TaskChat<'a> {
     /// Controls in which circumstances the model will stop generating new tokens.
     pub stopping: Stopping<'a>,
     /// Sampling controls how the tokens ("words") are selected for the completion.
-    pub sampling: Sampling,
+    pub sampling: ChatSampling,
 }
 
 impl<'a> TaskChat<'a> {
@@ -49,7 +49,7 @@ impl<'a> TaskChat<'a> {
     pub fn with_messages(messages: Vec<Message<'a>>) -> Self {
         TaskChat {
             messages,
-            sampling: Sampling::default(),
+            sampling: ChatSampling::default(),
             stopping: Stopping::default(),
         }
     }
@@ -64,6 +64,52 @@ impl<'a> TaskChat<'a> {
     pub fn with_maximum_tokens(mut self, maximum_tokens: u32) -> Self {
         self.stopping.maximum_tokens = Some(maximum_tokens);
         self
+    }
+}
+
+/// Sampling controls how the tokens ("words") are selected for the completion. This is different
+/// from [`crate::Sampling`], because it does **not** supprot the `top_k` parameter.
+pub struct ChatSampling {
+    /// A temperature encourages the model to produce less probable outputs ("be more creative").
+    /// Values are expected to be between 0 and 1. Try high values for a more random ("creative")
+    /// response.
+    pub temperature: Option<f64>,
+    /// Introduces random sampling for generated tokens by randomly selecting the next token from
+    /// the k most likely options. A value larger than 1 encourages the model to be more creative.
+    /// Set to 0 to get the same behaviour as `None`.
+    pub top_p: Option<f64>,
+    /// When specified, this number will decrease (or increase) the likelihood of repeating tokens
+    /// that were mentioned prior in the completion. The penalty is cumulative. The more a token
+    /// is mentioned in the completion, the more its probability will decrease.
+    /// A negative value will increase the likelihood of repeating tokens.
+    pub frequency_penalty: Option<f64>,
+    /// The presence penalty reduces the likelihood of generating tokens that are already present
+    /// in the generated text (repetition_penalties_include_completion=true) respectively the
+    /// prompt (repetition_penalties_include_prompt=true). Presence penalty is independent of the
+    /// number of occurrences. Increase the value to reduce the likelihood of repeating text.
+    /// An operation like the following is applied:
+    ///
+    /// logits[t] -> logits[t] - 1 * penalty
+    ///
+    /// where logits[t] is the logits for any given token. Note that the formula is independent
+    /// of the number of times that a token appears.
+    pub presence_penalty: Option<f64>,
+}
+
+impl ChatSampling {
+    /// Always chooses the token most likely to come next. Choose this if you do want close to
+    /// deterministic behaviour and do not want to apply any penalties to avoid repetitions.
+    pub const MOST_LIKELY: Self = ChatSampling {
+        temperature: None,
+        top_p: None,
+        frequency_penalty: None,
+        presence_penalty: None,
+    };
+}
+
+impl Default for ChatSampling {
+    fn default() -> Self {
+        Self::MOST_LIKELY
     }
 }
 
@@ -117,18 +163,13 @@ impl<'a> ChatBody<'a> {
                     stop_sequences,
                 },
             sampling:
-                Sampling {
+                ChatSampling {
                     temperature,
                     top_p,
-                    top_k,
                     frequency_penalty,
                     presence_penalty,
                 },
         } = task;
-
-        if top_k.is_some() {
-            panic!("The top_k parameter is not supported for chat completions.");
-        }
 
         Self {
             model,

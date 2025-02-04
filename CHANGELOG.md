@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.16.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.15.0...aleph-alpha-client-v0.16.0) (2025-02-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove support for complete_with_one_of sampling param
+
+### Features
+
+* remove support for complete_with_one_of sampling param ([349cd16](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/349cd1677ca6883e495b7daf4fc0b15a57e1e0cb))
+* support frequency penalty for completions ([de8874a](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/de8874ab1a4880c4485c5c36ef0dd02cdd33686a))
+* support presence penalty for completions ([7105f7e](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/7105f7e758fac9bbaddf5fababb45cbb8c863641))
+* support stop sequences on chat endpoint ([47bc954](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/47bc954226327ae8ab157cbb72469b9a0c4d5713))
+
+
+### Bug Fixes
+
+* serialize maximum tokens as max_tokens ([0491d1c](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/0491d1c20bc0db0c75ec72613e0698dfeffe7b29))
+
 ## [0.15.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.14.0...aleph-alpha-client-v0.15.0) (2024-12-10)
 
 

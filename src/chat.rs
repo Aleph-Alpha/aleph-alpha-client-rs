@@ -107,6 +107,8 @@ struct ChatBody<'a> {
     pub top_p: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub frequency_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presence_penalty: Option<f64>,
     /// Whether to stream the response or not.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub stream: bool,
@@ -121,6 +123,7 @@ impl<'a> ChatBody<'a> {
             temperature: task.sampling.temperature,
             top_p: task.sampling.top_p,
             frequency_penalty: task.sampling.frequency_penalty,
+            presence_penalty: task.sampling.presence_penalty,
             stream: false,
         }
     }

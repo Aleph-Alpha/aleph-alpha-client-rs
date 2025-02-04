@@ -691,3 +691,25 @@ async fn stop_sequences_request() {
     // Actually, it should be `stop`, but the api scheduler is inconsistent here
     assert_eq!(response.finish_reason, "content_filter");
 }
+
+#[tokio::test]
+#[should_panic(expected = "The top_k parameter is not supported for chat completions.")]
+async fn chat_does_not_support_top_k() {
+    // Given a high negative frequency penalty
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let message = Message::user("Haiku about oat milk!");
+
+    // When
+    let sampling = Sampling {
+        top_k: Some(10),
+        ..Default::default()
+    };
+    let stopping = Stopping::from_maximum_tokens(20);
+    let task = TaskChat {
+        messages: vec![message],
+        stopping,
+        sampling,
+    };
+    client.chat(&task, model, &How::default()).await.unwrap();
+}

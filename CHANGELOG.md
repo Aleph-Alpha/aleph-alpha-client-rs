@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.16.0...aleph-alpha-client-v0.17.0) (2025-02-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* Separate  Sampling struct for chat
+
+### Bug Fixes
+
+* Panic if top_k is used with chat ([4e304d0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/4e304d0c7cab4f5a53a6f5932511e8f4d277ab5a))
+* Separate  Sampling struct for chat ([0431a04](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/0431a04866436cd9b28a028eebc63d4b88e842d9))
+
 ## [0.16.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.15.0...aleph-alpha-client-v0.16.0) (2025-02-04)
 
 

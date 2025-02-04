@@ -62,6 +62,17 @@ pub struct Sampling {
     /// is mentioned in the completion, the more its probability will decrease.
     /// A negative value will increase the likelihood of repeating tokens.
     pub frequency_penalty: Option<f64>,
+    /// The presence penalty reduces the likelihood of generating tokens that are already present
+    /// in the generated text (repetition_penalties_include_completion=true) respectively the
+    /// prompt (repetition_penalties_include_prompt=true). Presence penalty is independent of the
+    /// number of occurrences. Increase the value to reduce the likelihood of repeating text.
+    /// An operation like the following is applied:
+    ///
+    /// logits[t] -> logits[t] - 1 * penalty
+    ///
+    /// where logits[t] is the logits for any given token. Note that the formula is independent
+    /// of the number of times that a token appears.
+    pub presence_penalty: Option<f64>,
 }
 
 impl Sampling {
@@ -72,6 +83,7 @@ impl Sampling {
         top_k: None,
         top_p: None,
         frequency_penalty: None,
+        presence_penalty: None,
     };
 }
 
@@ -158,6 +170,8 @@ struct BodyCompletion<'a> {
     pub raw_completion: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub frequency_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presence_penalty: Option<f64>,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -173,6 +187,7 @@ impl<'a> BodyCompletion<'a> {
             stream: false,
             raw_completion: task.special_tokens,
             frequency_penalty: task.sampling.frequency_penalty,
+            presence_penalty: task.sampling.presence_penalty,
         }
     }
     pub fn with_streaming(mut self) -> Self {

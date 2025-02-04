@@ -1,10 +1,10 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, Client, CompletionEvent, Granularity, How, ImageScore, ItemExplanation,
-    Message, Modality, Prompt, PromptGranularity, Sampling, SemanticRepresentation, Stopping, Task,
-    TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
-    TaskSemanticEmbedding, TaskTokenization, TextScore,
+    cosine_similarity, ChatSampling, Client, CompletionEvent, Granularity, How, ImageScore,
+    ItemExplanation, Message, Modality, Prompt, PromptGranularity, Sampling,
+    SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
+    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -600,7 +600,7 @@ async fn frequency_penalty_request() {
     let model = "pharia-1-llm-7b-control";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
     let message = Message::user("Haiku about oat milk!");
-    let sampling = Sampling {
+    let sampling = ChatSampling {
         frequency_penalty: Some(-10.0),
         ..Default::default()
     };
@@ -635,7 +635,7 @@ async fn presence_penalty_request() {
     let model = "pharia-1-llm-7b-control";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
     let message = Message::user("Haiku about oat milk!");
-    let sampling = Sampling {
+    let sampling = ChatSampling {
         presence_penalty: Some(-10.0),
         ..Default::default()
     };
@@ -678,7 +678,7 @@ async fn stop_sequences_request() {
     let task = TaskChat {
         messages: vec![message],
         stopping,
-        sampling: Sampling::MOST_LIKELY,
+        sampling: ChatSampling::MOST_LIKELY,
     };
 
     // When the response is requested
@@ -690,26 +690,4 @@ async fn stop_sequences_request() {
     // Then the finish reason is `content_filter`
     // Actually, it should be `stop`, but the api scheduler is inconsistent here
     assert_eq!(response.finish_reason, "content_filter");
-}
-
-#[tokio::test]
-#[should_panic(expected = "The top_k parameter is not supported for chat completions.")]
-async fn chat_does_not_support_top_k() {
-    // Given a high negative frequency penalty
-    let model = "pharia-1-llm-7b-control";
-    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
-    let message = Message::user("Haiku about oat milk!");
-
-    // When
-    let sampling = Sampling {
-        top_k: Some(10),
-        ..Default::default()
-    };
-    let stopping = Stopping::from_maximum_tokens(20);
-    let task = TaskChat {
-        messages: vec![message],
-        stopping,
-        sampling,
-    };
-    client.chat(&task, model, &How::default()).await.unwrap();
 }

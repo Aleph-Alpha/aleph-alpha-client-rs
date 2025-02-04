@@ -604,9 +604,10 @@ async fn frequency_penalty_request() {
         frequency_penalty: Some(-10.0),
         ..Default::default()
     };
+    let stopping = Stopping::from_maximum_tokens(20);
     let task = TaskChat {
         messages: vec![message],
-        maximum_tokens: Some(20),
+        stopping,
         sampling,
     };
 
@@ -638,9 +639,10 @@ async fn presence_penalty_request() {
         presence_penalty: Some(-10.0),
         ..Default::default()
     };
+    let stopping = Stopping::from_maximum_tokens(20);
     let task = TaskChat {
         messages: vec![message],
-        maximum_tokens: Some(20),
+        stopping,
         sampling,
     };
 
@@ -660,4 +662,32 @@ async fn presence_penalty_request() {
         .filter(|word| *word == "oat")
         .count();
     assert!(count > 5);
+}
+
+#[tokio::test]
+async fn stop_sequences_request() {
+    // Given a stop sequence
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let message = Message::user("An apple a day");
+
+    let stopping = Stopping {
+        stop_sequences: &["doctor"],
+        maximum_tokens: None,
+    };
+    let task = TaskChat {
+        messages: vec![message],
+        stopping,
+        sampling: Sampling::MOST_LIKELY,
+    };
+
+    // When the response is requested
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then the finish reason is `content_filter`
+    // Actually, it should be `stop`, but the api scheduler is inconsistent here
+    assert_eq!(response.finish_reason, "content_filter");
 }

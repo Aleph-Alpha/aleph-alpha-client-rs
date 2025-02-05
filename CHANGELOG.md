@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.18.0...aleph-alpha-client-v0.18.1) (2025-02-05)
+
+
+### Bug Fixes
+
+* TopLogprob is now public ([ede8003](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/ede8003f29b8c5a9121ee9fa86c84d60e77fd467))
+
 ## [0.18.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.17.0...aleph-alpha-client-v0.18.0) (2025-02-05)
 
 

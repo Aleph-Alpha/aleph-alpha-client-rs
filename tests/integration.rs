@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
     cosine_similarity, ChatSampling, Client, CompletionEvent, Granularity, How, ImageScore,
-    ItemExplanation, Message, Modality, Prompt, PromptGranularity, Sampling,
+    ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
     SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
     TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
@@ -609,6 +609,7 @@ async fn frequency_penalty_request() {
         messages: vec![message],
         stopping,
         sampling,
+        logprobs: Logprobs::No,
     };
 
     // When the response is requested
@@ -644,6 +645,7 @@ async fn presence_penalty_request() {
         messages: vec![message],
         stopping,
         sampling,
+        logprobs: Logprobs::No,
     };
 
     // When the response is requested
@@ -679,6 +681,7 @@ async fn stop_sequences_request() {
         messages: vec![message],
         stopping,
         sampling: ChatSampling::MOST_LIKELY,
+        logprobs: Logprobs::No,
     };
 
     // When the response is requested
@@ -690,4 +693,30 @@ async fn stop_sequences_request() {
     // Then the finish reason is `content_filter`
     // Actually, it should be `stop`, but the api scheduler is inconsistent here
     assert_eq!(response.finish_reason, "content_filter");
+}
+
+#[tokio::test]
+async fn show_logprobs_sampled() {
+    // Given
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let message = Message::user("An apple a day");
+
+    // When
+    let task = TaskChat {
+        messages: vec![message],
+        stopping: Stopping::from_maximum_tokens(2),
+        sampling: ChatSampling::MOST_LIKELY,
+        logprobs: Logprobs::Sampled,
+    };
+
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(response.logprobs.len(), 2);
+    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
+    assert_eq!(response.logprobs[1].token_as_str().unwrap(), "s");
 }

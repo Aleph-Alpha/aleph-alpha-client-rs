@@ -1,4 +1,5 @@
-use std::borrow::Cow;
+use core::str;
+use std::{borrow::Cow, str::Utf8Error};
 
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +36,9 @@ pub struct TaskChat<'a> {
     pub stopping: Stopping<'a>,
     /// Sampling controls how the tokens ("words") are selected for the completion.
     pub sampling: ChatSampling,
+    /// Use this to control the logarithmic probabilities you want to have returned. This is useful
+    /// to figure out how likely it had been that this specific token had been sampled.
+    pub logprobs: Logprobs,
 }
 
 impl<'a> TaskChat<'a> {
@@ -51,6 +55,7 @@ impl<'a> TaskChat<'a> {
             messages,
             sampling: ChatSampling::default(),
             stopping: Stopping::default(),
+            logprobs: Logprobs::No,
         }
     }
 
@@ -64,6 +69,31 @@ impl<'a> TaskChat<'a> {
     pub fn with_maximum_tokens(mut self, maximum_tokens: u32) -> Self {
         self.stopping.maximum_tokens = Some(maximum_tokens);
         self
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum Logprobs {
+    /// Do not return any logprobs
+    No,
+    /// Return only the logprob of the tokens which have actually been sampled into the completion.
+    Sampled,
+}
+
+impl Logprobs {
+    /// Representation for serialization in request body, for `logprobs` parameter
+    fn logprobs(self) -> bool {
+        match self {
+            Logprobs::No => false,
+            Logprobs::Sampled => true,
+        }
+    }
+
+    /// Representation for serialization in request body, for `top_logprobs` parameter
+    fn top_logprobs(self) -> Option<u32> {
+        match self {
+            Logprobs::No | Logprobs::Sampled => None,
+        }
     }
 }
 
@@ -113,15 +143,62 @@ impl Default for ChatSampling {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct ChatOutput {
     pub message: Message<'static>,
     pub finish_reason: String,
+    /// Contains the logprobs for the sampled and top n tokens, given that [`crate::Logprobs`] has
+    /// been set to [`crate::Logprobs::Sampled`] or [`crate::Logprobs::Top`].
+    pub logprobs: Vec<Logprob>,
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, PartialEq)]
+pub struct ResponseChoice {
+    pub message: Message<'static>,
+    pub finish_reason: String,
+    pub logprobs: Option<LogprobContent>,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Default)]
+pub struct LogprobContent {
+    content: Vec<Logprob>,
+}
+
+impl ResponseChoice {
+    fn into_chat_output(self) -> ChatOutput {
+        let ResponseChoice {
+            message,
+            finish_reason,
+            logprobs,
+        } = self;
+        ChatOutput {
+            message,
+            finish_reason,
+            logprobs: logprobs.unwrap_or_default().content,
+        }
+    }
+}
+
+/// Logprob information for a single token
+#[derive(Deserialize, Debug, PartialEq)]
+pub struct Logprob {
+    // The API returns both a UTF-8 String token and bytes as an array of numbers. We only
+    // deserialize bytes as it is the better source of truth.
+    /// Binary represtantation of the token, usually these bytes are UTF-8.
+    #[serde(rename = "bytes")]
+    pub token: Vec<u8>,
+    pub logprob: f64,
+}
+
+impl Logprob {
+    pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
+        str::from_utf8(&self.token)
+    }
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct ResponseChat {
-    pub choices: Vec<ChatOutput>,
+    choices: Vec<ResponseChoice>,
 }
 
 #[derive(Serialize)]
@@ -151,6 +228,10 @@ struct ChatBody<'a> {
     /// Whether to stream the response or not.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub stream: bool,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub logprobs: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub top_logprobs: Option<u32>,
 }
 
 impl<'a> ChatBody<'a> {
@@ -169,6 +250,7 @@ impl<'a> ChatBody<'a> {
                     frequency_penalty,
                     presence_penalty,
                 },
+            logprobs,
         } = task;
 
         Self {
@@ -181,6 +263,8 @@ impl<'a> ChatBody<'a> {
             frequency_penalty: *frequency_penalty,
             presence_penalty: *presence_penalty,
             stream: false,
+            logprobs: logprobs.logprobs(),
+            top_logprobs: logprobs.top_logprobs(),
         }
     }
 
@@ -206,7 +290,7 @@ impl Task for TaskChat<'_> {
     }
 
     fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
-        response.choices.pop().unwrap()
+        response.choices.pop().unwrap().into_chat_output()
     }
 }
 

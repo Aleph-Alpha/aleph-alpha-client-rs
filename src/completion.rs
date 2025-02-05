@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Prompt, StreamTask};
+use crate::{http::Task, Logprob, Logprobs, Prompt, StreamTask};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -13,6 +13,9 @@ pub struct TaskCompletion<'a> {
     pub sampling: Sampling,
     /// Whether to include special tokens (e.g. <|endoftext|>, <|python_tag|>) in the completion.
     pub special_tokens: bool,
+    /// Wether you are interessted in the probabilities of the sampled tokens, or most likely
+    /// tokens.
+    pub logprobs: Logprobs,
 }
 
 impl<'a> TaskCompletion<'a> {
@@ -23,6 +26,7 @@ impl<'a> TaskCompletion<'a> {
             stopping: Stopping::NO_TOKEN_LIMIT,
             sampling: Sampling::MOST_LIKELY,
             special_tokens: false,
+            logprobs: Logprobs::No,
         }
     }
 
@@ -39,6 +43,11 @@ impl<'a> TaskCompletion<'a> {
     /// Include special tokens (e.g. <|endoftext|>, <|python_tag|>) in the completion.
     pub fn with_special_tokens(mut self) -> Self {
         self.special_tokens = true;
+        self
+    }
+
+    pub fn with_logprobs(mut self, logprobs: Logprobs) -> Self {
+        self.logprobs = logprobs;
         self
     }
 }
@@ -179,22 +188,32 @@ struct BodyCompletion<'a> {
     pub frequency_penalty: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub presence_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub logprobs: Option<u8>,
 }
 
 impl<'a> BodyCompletion<'a> {
     pub fn new(model: &'a str, task: &'a TaskCompletion<'a>) -> Self {
+        let TaskCompletion {
+            prompt,
+            stopping,
+            sampling,
+            special_tokens,
+            logprobs,
+        } = task;
         Self {
             model,
-            prompt: task.prompt.borrow(),
-            maximum_tokens: task.stopping.maximum_tokens,
-            stop_sequences: task.stopping.stop_sequences,
-            temperature: task.sampling.temperature,
-            top_k: task.sampling.top_k,
-            top_p: task.sampling.top_p,
+            prompt: prompt.borrow(),
+            maximum_tokens: stopping.maximum_tokens,
+            stop_sequences: stopping.stop_sequences,
+            temperature: sampling.temperature,
+            top_k: sampling.top_k,
+            top_p: sampling.top_p,
             stream: false,
-            raw_completion: task.special_tokens,
-            frequency_penalty: task.sampling.frequency_penalty,
-            presence_penalty: task.sampling.presence_penalty,
+            raw_completion: *special_tokens,
+            frequency_penalty: sampling.frequency_penalty,
+            presence_penalty: sampling.presence_penalty,
+            logprobs: logprobs.to_logprobs_num(),
         }
     }
     pub fn with_streaming(mut self) -> Self {
@@ -214,13 +233,15 @@ struct DeserializedCompletion {
     completion: String,
     finish_reason: String,
     raw_completion: Option<String>,
+    
 }
 
 /// Completion and metainformation returned by a completion task
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct CompletionOutput {
     pub completion: String,
     pub finish_reason: String,
+    pub logprobs: Vec<Logprob>,
 }
 
 impl Task for TaskCompletion<'_> {
@@ -248,6 +269,7 @@ impl Task for TaskCompletion<'_> {
         CompletionOutput {
             completion,
             finish_reason: deserialized.finish_reason,
+            logprobs: Vec::new(),
         }
     }
 }
@@ -314,5 +336,16 @@ impl StreamTask for TaskCompletion<'_> {
 
     fn body_to_output(response: Self::ResponseBody) -> Self::Output {
         response
+    }
+}
+
+impl Logprobs {
+    /// Convert into a number for completion endpoint
+    fn to_logprobs_num(self) -> Option<u8> {
+        match self {
+            Logprobs::No => None,
+            Logprobs::Sampled => Some(0),
+            Logprobs::Top(n) => Some(n),
+        }
     }
 }

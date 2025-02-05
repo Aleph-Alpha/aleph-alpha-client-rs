@@ -224,6 +224,7 @@ async fn complete_structured_prompt() {
         },
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
+        logprobs: Logprobs::No,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -254,6 +255,7 @@ async fn maximum_tokens_none_request() {
         stopping,
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
+        logprobs: Logprobs::No,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -388,6 +390,7 @@ async fn describe_image_starting_from_a_path() {
         stopping: Stopping::from_maximum_tokens(10),
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
+        logprobs: Logprobs::No,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -418,6 +421,7 @@ async fn describe_image_starting_from_a_dyn_image() {
         stopping: Stopping::from_maximum_tokens(10),
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
+        logprobs: Logprobs::No,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -696,7 +700,7 @@ async fn stop_sequences_request() {
 }
 
 #[tokio::test]
-async fn show_logprobs_sampled() {
+async fn show_logprobs_sampled_chat() {
     // Given
     let model = "pharia-1-llm-7b-control";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -710,10 +714,7 @@ async fn show_logprobs_sampled() {
         logprobs: Logprobs::Sampled,
     };
 
-    let response = client
-        .output_of(&task.with_model(model), &How::default())
-        .await
-        .unwrap();
+    let response = client.chat(&task, model, &How::default()).await.unwrap();
 
     // Then
     assert_eq!(response.logprobs.len(), 2);
@@ -722,7 +723,7 @@ async fn show_logprobs_sampled() {
 }
 
 #[tokio::test]
-async fn show_top_logprobs() {
+async fn show_top_logprobs_chat() {
     // Given
     let model = "pharia-1-llm-7b-control";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -736,10 +737,7 @@ async fn show_top_logprobs() {
         logprobs: Logprobs::Top(2),
     };
 
-    let response = client
-        .output_of(&task.with_model(model), &How::default())
-        .await
-        .unwrap();
+    let response = client.chat(&task, model, &How::default()).await.unwrap();
 
     // Then
     assert_eq!(response.logprobs.len(), 1);
@@ -753,4 +751,26 @@ async fn show_top_logprobs() {
         response.logprobs[0].top_logprobs[1].token_as_str().unwrap(),
         " keeps"
     );
+}
+
+#[tokio::test]
+async fn show_logprobs_sampled_completion() {
+    // Given
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+
+    // When
+    let task = TaskCompletion::from_text("An apple a day")
+        .with_maximum_tokens(2)
+        .with_logprobs(Logprobs::Sampled);
+
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // // Then
+    assert_eq!(response.logprobs.len(), 2);
+    // assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
+    // assert_eq!(response.logprobs[1].token_as_str().unwrap(), "s");
 }

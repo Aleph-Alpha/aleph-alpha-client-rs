@@ -720,3 +720,31 @@ async fn show_logprobs_sampled() {
     assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
     assert_eq!(response.logprobs[1].token_as_str().unwrap(), "s");
 }
+
+#[tokio::test]
+async fn show_top_logprobs() {
+    // Given
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let message = Message::user("An apple a day");
+
+    // When
+    let task = TaskChat {
+        messages: vec![message],
+        stopping: Stopping::from_maximum_tokens(1),
+        sampling: ChatSampling::MOST_LIKELY,
+        logprobs: Logprobs::Top(2),
+    };
+
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(response.logprobs.len(), 1);
+    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
+    assert_eq!(response.logprobs[0].top_logprobs.len(), 2);
+    assert_eq!(response.logprobs[0].top_logprobs[0].token_as_str().unwrap(), " Keep");
+    assert_eq!(response.logprobs[0].top_logprobs[1].token_as_str().unwrap(), " keeps");
+}

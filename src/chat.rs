@@ -78,6 +78,8 @@ pub enum Logprobs {
     No,
     /// Return only the logprob of the tokens which have actually been sampled into the completion.
     Sampled,
+    /// Request between 0 and 20 tokens
+    Top(u8),
 }
 
 impl Logprobs {
@@ -85,14 +87,15 @@ impl Logprobs {
     fn logprobs(self) -> bool {
         match self {
             Logprobs::No => false,
-            Logprobs::Sampled => true,
+            Logprobs::Sampled | Logprobs::Top(_)=> true,
         }
     }
 
     /// Representation for serialization in request body, for `top_logprobs` parameter
-    fn top_logprobs(self) -> Option<u32> {
+    fn top_logprobs(self) -> Option<u8> {
         match self {
             Logprobs::No | Logprobs::Sampled => None,
+            Logprobs::Top(n) => Some(n)
         }
     }
 }
@@ -188,9 +191,26 @@ pub struct Logprob {
     #[serde(rename = "bytes")]
     pub token: Vec<u8>,
     pub logprob: f64,
+    pub top_logprobs: Vec<TopLogprob>
 }
 
 impl Logprob {
+    pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
+        str::from_utf8(&self.token)
+    }
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+pub struct TopLogprob {
+    // The API returns both a UTF-8 String token and bytes as an array of numbers. We only
+    // deserialize bytes as it is the better source of truth.
+    /// Binary represtantation of the token, usually these bytes are UTF-8.
+    #[serde(rename = "bytes")]
+    pub token: Vec<u8>,
+    pub logprob: f64,
+}
+
+impl TopLogprob {
     pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(&self.token)
     }
@@ -231,7 +251,7 @@ struct ChatBody<'a> {
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub logprobs: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_logprobs: Option<u32>,
+    pub top_logprobs: Option<u8>,
 }
 
 impl<'a> ChatBody<'a> {

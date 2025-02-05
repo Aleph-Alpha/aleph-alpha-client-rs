@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{chat::TopLogprob, http::Task, Logprob, Logprobs, Prompt, StreamTask};
+use crate::{http::Task, Logprob, Logprobs, Prompt, StreamTask, TopLogprob};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {

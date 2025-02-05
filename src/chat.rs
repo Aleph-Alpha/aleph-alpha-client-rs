@@ -3,7 +3,10 @@ use std::{borrow::Cow, str::Utf8Error};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{logprobs::Logprobs, Stopping, StreamTask, Task};
+use crate::{
+    logprobs::{Logprobs, TopLogprob},
+    Stopping, StreamTask, Task,
+};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Message<'a> {
@@ -167,22 +170,6 @@ pub struct Logprob {
 }
 
 impl Logprob {
-    pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
-        str::from_utf8(&self.token)
-    }
-}
-
-#[derive(Deserialize, Debug, PartialEq)]
-pub struct TopLogprob {
-    // The API returns both a UTF-8 String token and bytes as an array of numbers. We only
-    // deserialize bytes as it is the better source of truth.
-    /// Binary represtantation of the token, usually these bytes are UTF-8.
-    #[serde(rename = "bytes")]
-    pub token: Vec<u8>,
-    pub logprob: f64,
-}
-
-impl TopLogprob {
     pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(&self.token)
     }

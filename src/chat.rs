@@ -87,7 +87,7 @@ impl Logprobs {
     fn logprobs(self) -> bool {
         match self {
             Logprobs::No => false,
-            Logprobs::Sampled | Logprobs::Top(_)=> true,
+            Logprobs::Sampled | Logprobs::Top(_) => true,
         }
     }
 
@@ -95,7 +95,7 @@ impl Logprobs {
     fn top_logprobs(self) -> Option<u8> {
         match self {
             Logprobs::No | Logprobs::Sampled => None,
-            Logprobs::Top(n) => Some(n)
+            Logprobs::Top(n) => Some(n),
         }
     }
 }
@@ -191,7 +191,7 @@ pub struct Logprob {
     #[serde(rename = "bytes")]
     pub token: Vec<u8>,
     pub logprob: f64,
-    pub top_logprobs: Vec<TopLogprob>
+    pub top_logprobs: Vec<TopLogprob>,
 }
 
 impl Logprob {

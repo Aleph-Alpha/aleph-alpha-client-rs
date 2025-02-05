@@ -745,6 +745,12 @@ async fn show_top_logprobs() {
     assert_eq!(response.logprobs.len(), 1);
     assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
     assert_eq!(response.logprobs[0].top_logprobs.len(), 2);
-    assert_eq!(response.logprobs[0].top_logprobs[0].token_as_str().unwrap(), " Keep");
-    assert_eq!(response.logprobs[0].top_logprobs[1].token_as_str().unwrap(), " keeps");
+    assert_eq!(
+        response.logprobs[0].top_logprobs[0].token_as_str().unwrap(),
+        " Keep"
+    );
+    assert_eq!(
+        response.logprobs[0].top_logprobs[1].token_as_str().unwrap(),
+        " keeps"
+    );
 }

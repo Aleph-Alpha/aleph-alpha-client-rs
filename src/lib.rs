@@ -43,10 +43,7 @@ use std::{pin::Pin, time::Duration};
 use tokenizers::Tokenizer;
 
 pub use self::{
-    chat::{
-        ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Logprob, Message, TaskChat,
-        TopLogprob,
-    },
+    chat::{ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Logprob, Message, TaskChat},
     completion::{
         CompletionEvent, CompletionOutput, CompletionSummary, Sampling, Stopping, StreamChunk,
         StreamSummary, TaskCompletion,
@@ -57,7 +54,7 @@ pub use self::{
         PromptGranularity, TaskExplanation, TextScore,
     },
     http::{Error, Job, Task},
-    logprobs::Logprobs,
+    logprobs::{Logprobs, TopLogprob},
     prompt::{Modality, Prompt},
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,

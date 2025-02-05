@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.19.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.18.1...aleph-alpha-client-v0.19.0) (2025-02-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Logprobs for completion
+* Introduce logprobs to completion task
+
+### Features
+
+* Logprobs for completion ([6949017](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/69490174475b0346f558ca11200241b3a55b4ef7))
+
+
+### Code Refactoring
+
+* Introduce logprobs to completion task ([4d5947a](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/4d5947a000c94ad3d7fa46780029b8971cc59488))
+
 ## [0.18.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.18.0...aleph-alpha-client-v0.18.1) (2025-02-05)
 
 

@@ -42,7 +42,9 @@ use std::{pin::Pin, time::Duration};
 use tokenizers::Tokenizer;
 
 pub use self::{
-    chat::{ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Message, TaskChat},
+    chat::{
+        ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Logprob, Logprobs, Message, TaskChat,
+    },
     completion::{
         CompletionEvent, CompletionOutput, CompletionSummary, Sampling, Stopping, StreamChunk,
         StreamSummary, TaskCompletion,

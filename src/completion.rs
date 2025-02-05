@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Logprob, Logprobs, Prompt, StreamTask};
+use crate::{chat::TopLogprob, http::Task, Logprob, Logprobs, Prompt, StreamTask};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -189,7 +191,9 @@ struct BodyCompletion<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub presence_penalty: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub logprobs: Option<u8>,
+    pub log_probs: Option<u8>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub tokens: bool,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -213,7 +217,8 @@ impl<'a> BodyCompletion<'a> {
             raw_completion: *special_tokens,
             frequency_penalty: sampling.frequency_penalty,
             presence_penalty: sampling.presence_penalty,
-            logprobs: logprobs.to_logprobs_num(),
+            log_probs: logprobs.to_logprobs_num(),
+            tokens: logprobs.to_tokens(),
         }
     }
     pub fn with_streaming(mut self) -> Self {
@@ -222,18 +227,21 @@ impl<'a> BodyCompletion<'a> {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct ResponseCompletion {
     model_version: String,
     completions: Vec<DeserializedCompletion>,
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, PartialEq)]
 struct DeserializedCompletion {
     completion: String,
     finish_reason: String,
     raw_completion: Option<String>,
-    
+    #[serde(default)]
+    log_probs: Vec<HashMap<String, f64>>,
+    #[serde(default)]
+    completion_tokens: Vec<String>,
 }
 
 /// Completion and metainformation returned by a completion task
@@ -260,18 +268,62 @@ impl Task for TaskCompletion<'_> {
     }
 
     fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
-        let deserialized = response.completions.pop().unwrap();
+        // We expect the API to return exactly one completion, despite them being modled as an array
+        let DeserializedCompletion {
+            completion,
+            finish_reason,
+            raw_completion,
+            log_probs,
+            completion_tokens,
+        } = response.completions.pop().unwrap();
         let completion = if self.special_tokens {
-            deserialized.raw_completion.unwrap()
+            raw_completion.unwrap()
         } else {
-            deserialized.completion
+            completion
         };
         CompletionOutput {
             completion,
-            finish_reason: deserialized.finish_reason,
-            logprobs: Vec::new(),
+            finish_reason,
+            logprobs: completion_logprobs_to_canonical(
+                log_probs,
+                completion_tokens,
+                self.logprobs.top_logprobs().unwrap_or_default(),
+            ),
         }
     }
+}
+
+fn completion_logprobs_to_canonical(
+    log_probs: Vec<HashMap<String, f64>>,
+    completion_tokens: Vec<String>,
+    num_expected_top_logprobs: u8,
+) -> Vec<Logprob> {
+    let mut logprobs = Vec::new();
+    for (token, map) in completion_tokens.into_iter().zip(log_probs) {
+        let logprob = *map.get(&token).unwrap_or(&f64::NAN);
+        let mut top_logprobs = map
+            .into_iter()
+            .map(|(token, logprob)| TopLogprob {
+                token: token.into_bytes(),
+                logprob,
+            })
+            .collect::<Vec<_>>();
+        // We want to make sure the most likely tokens are first in the array
+        top_logprobs.sort_by(|a, b| b.logprob.total_cmp(&a.logprob));
+        // The aa api always makes the sampled token part of the array, even if not in the top n
+        // elements. Since we translate into a representation with the sampled token separate, we
+        // can keep the top n elements constant. In case the sampled token has not been in the top
+        // n, the below line will shorten the array by one.
+        top_logprobs.resize_with(num_expected_top_logprobs as usize, || {
+            unreachable!("Vec should only shorten")
+        });
+        logprobs.push(Logprob {
+            token: token.into_bytes(),
+            logprob,
+            top_logprobs,
+        });
+    }
+    logprobs
 }
 
 /// Describes a chunk of a completion stream
@@ -346,6 +398,14 @@ impl Logprobs {
             Logprobs::No => None,
             Logprobs::Sampled => Some(0),
             Logprobs::Top(n) => Some(n),
+        }
+    }
+
+    /// Wether or not we want to return the completion tokens
+    fn to_tokens(self) -> bool {
+        match self {
+            Logprobs::No => false,
+            Logprobs::Sampled | Logprobs::Top(_) => true,
         }
     }
 }

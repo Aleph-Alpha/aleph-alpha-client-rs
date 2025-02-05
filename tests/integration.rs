@@ -771,6 +771,42 @@ async fn show_logprobs_sampled_completion() {
 
     // // Then
     assert_eq!(response.logprobs.len(), 2);
-    // assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
-    // assert_eq!(response.logprobs[1].token_as_str().unwrap(), "s");
+    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " keeps");
+    assert!(response.logprobs[0].logprob.is_sign_negative());
+    assert_eq!(response.logprobs[1].token_as_str().unwrap(), " the");
+    assert!(response.logprobs[1].logprob.is_sign_negative());
+}
+
+#[tokio::test]
+async fn show_top_logprobs_completion() {
+    // Given
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+
+    // When
+    let task = TaskCompletion::from_text("An apple a day")
+        .with_maximum_tokens(1)
+        .with_logprobs(Logprobs::Top(2));
+
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(response.logprobs.len(), 1);
+    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " keeps");
+    assert!(response.logprobs[0].logprob.is_sign_negative());
+    assert_eq!(response.logprobs[0].top_logprobs.len(), 2);
+    assert_eq!(
+        response.logprobs[0].top_logprobs[0].token_as_str().unwrap(),
+        " keeps"
+    );
+    assert_eq!(
+        response.logprobs[0].top_logprobs[1].token_as_str().unwrap(),
+        " may"
+    );
+    assert!(
+        response.logprobs[0].top_logprobs[0].logprob > response.logprobs[0].top_logprobs[1].logprob
+    );
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.18.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.17.0...aleph-alpha-client-v0.18.0) (2025-02-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Introduce Logprobs::Top
+* Introduce Logprobs::Sampled
+
+### Features
+
+* Introduce Logprobs::Sampled ([15d7954](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/15d79540e7080b61afd2930bf6822e000c36e693))
+* Introduce Logprobs::Top ([44b33bf](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/44b33bfdc9f3d22befd809070667000ed290ecce))
+
 ## [0.17.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.16.0...aleph-alpha-client-v0.17.0) (2025-02-04)
 
 

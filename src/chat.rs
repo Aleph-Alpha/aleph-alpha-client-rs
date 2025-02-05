@@ -3,7 +3,7 @@ use std::{borrow::Cow, str::Utf8Error};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Stopping, StreamTask, Task};
+use crate::{logprobs::Logprobs, Stopping, StreamTask, Task};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Message<'a> {
@@ -69,34 +69,6 @@ impl<'a> TaskChat<'a> {
     pub fn with_maximum_tokens(mut self, maximum_tokens: u32) -> Self {
         self.stopping.maximum_tokens = Some(maximum_tokens);
         self
-    }
-}
-
-#[derive(Clone, Copy)]
-pub enum Logprobs {
-    /// Do not return any logprobs
-    No,
-    /// Return only the logprob of the tokens which have actually been sampled into the completion.
-    Sampled,
-    /// Request between 0 and 20 tokens
-    Top(u8),
-}
-
-impl Logprobs {
-    /// Representation for serialization in request body, for `logprobs` parameter
-    fn logprobs(self) -> bool {
-        match self {
-            Logprobs::No => false,
-            Logprobs::Sampled | Logprobs::Top(_) => true,
-        }
-    }
-
-    /// Representation for serialization in request body, for `top_logprobs` parameter
-    fn top_logprobs(self) -> Option<u8> {
-        match self {
-            Logprobs::No | Logprobs::Sampled => None,
-            Logprobs::Top(n) => Some(n),
-        }
     }
 }
 
@@ -363,5 +335,23 @@ impl StreamTask for TaskChat<'_> {
             .choices
             .pop()
             .expect("There must always be at least one choice")
+    }
+}
+
+impl Logprobs {
+    /// Representation for serialization in request body, for `logprobs` parameter
+    pub fn logprobs(self) -> bool {
+        match self {
+            Logprobs::No => false,
+            Logprobs::Sampled | Logprobs::Top(_) => true,
+        }
+    }
+
+    /// Representation for serialization in request body, for `top_logprobs` parameter
+    pub fn top_logprobs(self) -> Option<u8> {
+        match self {
+            Logprobs::No | Logprobs::Sampled => None,
+            Logprobs::Top(n) => Some(n),
+        }
     }
 }

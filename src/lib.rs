@@ -29,6 +29,7 @@ mod detokenization;
 mod explanation;
 mod http;
 mod image_preprocessing;
+mod logprobs;
 mod prompt;
 mod semantic_embedding;
 mod stream;
@@ -43,7 +44,7 @@ use tokenizers::Tokenizer;
 
 pub use self::{
     chat::{
-        ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Logprob, Logprobs, Message, TaskChat,
+        ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Logprob, Message, TaskChat,
         TopLogprob,
     },
     completion::{
@@ -56,6 +57,7 @@ pub use self::{
         PromptGranularity, TaskExplanation, TextScore,
     },
     http::{Error, Job, Task},
+    logprobs::Logprobs,
     prompt::{Modality, Prompt},
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
@@ -312,7 +314,8 @@ impl Client {
     /// of the prompt influenced the target.
     ///
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error, Granularity, TaskExplanation, Stopping, Prompt, Sampling};
+    /// use aleph_alpha_client::{Client, How, TaskCompletion, Task, Error, Granularity,
+    ///     TaskExplanation, Stopping, Prompt, Sampling, Logprobs};
     ///
     /// async fn print_explanation() -> Result<(), Error> {
     ///     let client = Client::from_env()?;
@@ -329,6 +332,7 @@ impl Client {
     ///         stopping: Stopping::from_maximum_tokens(10),
     ///         sampling: Sampling::MOST_LIKELY,
     ///         special_tokens: false,
+    ///         logprobs: Logprobs::No,
     ///     };
     ///     let response = client.completion(&task, model, &How::default()).await?;
     ///

@@ -44,6 +44,7 @@ use tokenizers::Tokenizer;
 pub use self::{
     chat::{
         ChatEvent, ChatOutput, ChatSampling, ChatStreamChunk, Logprob, Logprobs, Message, TaskChat,
+        TopLogprob,
     },
     completion::{
         CompletionEvent, CompletionOutput, CompletionSummary, Sampling, Stopping, StreamChunk,

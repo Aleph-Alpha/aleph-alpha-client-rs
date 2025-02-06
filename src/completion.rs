@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Logprob, Logprobs, Prompt, StreamTask, TopLogprob};
+use crate::{http::Task, Distribution, Logprob, Logprobs, Prompt, StreamTask};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -249,7 +249,7 @@ struct DeserializedCompletion {
 pub struct CompletionOutput {
     pub completion: String,
     pub finish_reason: String,
-    pub logprobs: Vec<Logprob>,
+    pub logprobs: Vec<Distribution>,
 }
 
 impl Task for TaskCompletion<'_> {
@@ -297,13 +297,13 @@ fn completion_logprobs_to_canonical(
     log_probs: Vec<HashMap<String, f64>>,
     completion_tokens: Vec<String>,
     num_expected_top_logprobs: u8,
-) -> Vec<Logprob> {
+) -> Vec<Distribution> {
     let mut logprobs = Vec::new();
     for (token, map) in completion_tokens.into_iter().zip(log_probs) {
         let logprob = *map.get(&token).unwrap_or(&f64::NAN);
         let mut top_logprobs = map
             .into_iter()
-            .map(|(token, logprob)| TopLogprob {
+            .map(|(token, logprob)| Logprob {
                 token: token.into_bytes(),
                 logprob,
             })
@@ -317,10 +317,12 @@ fn completion_logprobs_to_canonical(
         top_logprobs.resize_with(num_expected_top_logprobs as usize, || {
             unreachable!("Vec should only shorten")
         });
-        logprobs.push(Logprob {
-            token: token.into_bytes(),
-            logprob,
-            top_logprobs,
+        logprobs.push(Distribution {
+            sampled: Logprob {
+                token: token.into_bytes(),
+                logprob,
+            },
+            top: top_logprobs,
         });
     }
     logprobs

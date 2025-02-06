@@ -1,10 +1,10 @@
 use core::str;
-use std::{borrow::Cow, str::Utf8Error};
+use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    logprobs::{Logprobs, TopLogprob},
+    logprobs::{Logprob, Logprobs},
     Stopping, StreamTask, Task,
 };
 
@@ -127,7 +127,7 @@ pub struct ChatOutput {
     pub finish_reason: String,
     /// Contains the logprobs for the sampled and top n tokens, given that [`crate::Logprobs`] has
     /// been set to [`crate::Logprobs::Sampled`] or [`crate::Logprobs::Top`].
-    pub logprobs: Vec<Logprob>,
+    pub logprobs: Vec<Distribution>,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -139,7 +139,7 @@ pub struct ResponseChoice {
 
 #[derive(Deserialize, Debug, PartialEq, Default)]
 pub struct LogprobContent {
-    content: Vec<Logprob>,
+    content: Vec<Distribution>,
 }
 
 impl ResponseChoice {
@@ -159,20 +159,13 @@ impl ResponseChoice {
 
 /// Logprob information for a single token
 #[derive(Deserialize, Debug, PartialEq)]
-pub struct Logprob {
-    // The API returns both a UTF-8 String token and bytes as an array of numbers. We only
-    // deserialize bytes as it is the better source of truth.
-    /// Binary represtantation of the token, usually these bytes are UTF-8.
-    #[serde(rename = "bytes")]
-    pub token: Vec<u8>,
-    pub logprob: f64,
-    pub top_logprobs: Vec<TopLogprob>,
-}
-
-impl Logprob {
-    pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
-        str::from_utf8(&self.token)
-    }
+pub struct Distribution {
+    // Logarithmic probability of the token returned in the completion
+    #[serde(flatten)]
+    pub sampled: Logprob,
+    // Logarithmic probabilities of the most probable tokens, filled if user has requested [`crate::Logprobs::Top`]
+    #[serde(rename = "top_logprobs")]
+    pub top: Vec<Logprob>,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]

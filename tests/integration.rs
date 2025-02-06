@@ -814,3 +814,25 @@ async fn show_top_logprobs_completion() {
     assert_eq!(response.logprobs[0].top[1].token_as_str().unwrap(), " may");
     assert!(response.logprobs[0].top[0].logprob > response.logprobs[0].top[1].logprob);
 }
+
+#[tokio::test]
+async fn show_token_usage_chat() {
+    // Given
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let message = Message::user("An apple a day");
+
+    let task = TaskChat {
+        messages: vec![message],
+        stopping: Stopping::from_maximum_tokens(3),
+        sampling: ChatSampling::MOST_LIKELY,
+        logprobs: Logprobs::No,
+    };
+
+    // When
+    let response = client.chat(&task, model, &How::default()).await.unwrap();
+
+    // Then
+    assert_eq!(response.usage.prompt_tokens, 19);
+    assert_eq!(response.usage.completion_tokens, 3);
+}

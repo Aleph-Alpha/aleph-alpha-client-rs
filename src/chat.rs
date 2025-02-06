@@ -121,6 +121,12 @@ impl Default for ChatSampling {
     }
 }
 
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct Usage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct ChatOutput {
     pub message: Message<'static>,
@@ -128,6 +134,23 @@ pub struct ChatOutput {
     /// Contains the logprobs for the sampled and top n tokens, given that [`crate::Logprobs`] has
     /// been set to [`crate::Logprobs::Sampled`] or [`crate::Logprobs::Top`].
     pub logprobs: Vec<Distribution>,
+    pub usage: Usage,
+}
+
+impl ChatOutput {
+    pub fn new(
+        message: Message<'static>,
+        finish_reason: String,
+        logprobs: Vec<Distribution>,
+        usage: Usage,
+    ) -> Self {
+        Self {
+            message,
+            finish_reason,
+            logprobs,
+            usage,
+        }
+    }
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -140,21 +163,6 @@ pub struct ResponseChoice {
 #[derive(Deserialize, Debug, PartialEq, Default)]
 pub struct LogprobContent {
     content: Vec<Distribution>,
-}
-
-impl ResponseChoice {
-    fn into_chat_output(self) -> ChatOutput {
-        let ResponseChoice {
-            message,
-            finish_reason,
-            logprobs,
-        } = self;
-        ChatOutput {
-            message,
-            finish_reason,
-            logprobs: logprobs.unwrap_or_default().content,
-        }
-    }
 }
 
 /// Logprob information for a single token
@@ -171,6 +179,7 @@ pub struct Distribution {
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct ResponseChat {
     choices: Vec<ResponseChoice>,
+    usage: Usage,
 }
 
 #[derive(Serialize)]
@@ -262,7 +271,17 @@ impl Task for TaskChat<'_> {
     }
 
     fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
-        response.choices.pop().unwrap().into_chat_output()
+        let ResponseChoice {
+            message,
+            finish_reason,
+            logprobs,
+        } = response.choices.pop().unwrap();
+        ChatOutput::new(
+            message,
+            finish_reason,
+            logprobs.unwrap_or_default().content,
+            response.usage,
+        )
     }
 }
 

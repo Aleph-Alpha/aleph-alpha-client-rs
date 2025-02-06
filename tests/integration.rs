@@ -718,8 +718,11 @@ async fn show_logprobs_sampled_chat() {
 
     // Then
     assert_eq!(response.logprobs.len(), 2);
-    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
-    assert_eq!(response.logprobs[1].token_as_str().unwrap(), "s");
+    assert_eq!(
+        response.logprobs[0].sampled.token_as_str().unwrap(),
+        " Keep"
+    );
+    assert_eq!(response.logprobs[1].sampled.token_as_str().unwrap(), "s");
 }
 
 #[tokio::test]
@@ -741,14 +744,14 @@ async fn show_top_logprobs_chat() {
 
     // Then
     assert_eq!(response.logprobs.len(), 1);
-    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " Keep");
-    assert_eq!(response.logprobs[0].top_logprobs.len(), 2);
     assert_eq!(
-        response.logprobs[0].top_logprobs[0].token_as_str().unwrap(),
+        response.logprobs[0].sampled.token_as_str().unwrap(),
         " Keep"
     );
+    assert_eq!(response.logprobs[0].top.len(), 2);
+    assert_eq!(response.logprobs[0].top[0].token_as_str().unwrap(), " Keep");
     assert_eq!(
-        response.logprobs[0].top_logprobs[1].token_as_str().unwrap(),
+        response.logprobs[0].top[1].token_as_str().unwrap(),
         " keeps"
     );
 }
@@ -771,10 +774,13 @@ async fn show_logprobs_sampled_completion() {
 
     // // Then
     assert_eq!(response.logprobs.len(), 2);
-    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " keeps");
-    assert!(response.logprobs[0].logprob.is_sign_negative());
-    assert_eq!(response.logprobs[1].token_as_str().unwrap(), " the");
-    assert!(response.logprobs[1].logprob.is_sign_negative());
+    assert_eq!(
+        response.logprobs[0].sampled.token_as_str().unwrap(),
+        " keeps"
+    );
+    assert!(response.logprobs[0].sampled.logprob.is_sign_negative());
+    assert_eq!(response.logprobs[1].sampled.token_as_str().unwrap(), " the");
+    assert!(response.logprobs[1].sampled.logprob.is_sign_negative());
 }
 
 #[tokio::test]
@@ -795,18 +801,16 @@ async fn show_top_logprobs_completion() {
 
     // Then
     assert_eq!(response.logprobs.len(), 1);
-    assert_eq!(response.logprobs[0].token_as_str().unwrap(), " keeps");
-    assert!(response.logprobs[0].logprob.is_sign_negative());
-    assert_eq!(response.logprobs[0].top_logprobs.len(), 2);
     assert_eq!(
-        response.logprobs[0].top_logprobs[0].token_as_str().unwrap(),
+        response.logprobs[0].sampled.token_as_str().unwrap(),
         " keeps"
     );
+    assert!(response.logprobs[0].sampled.logprob.is_sign_negative());
+    assert_eq!(response.logprobs[0].top.len(), 2);
     assert_eq!(
-        response.logprobs[0].top_logprobs[1].token_as_str().unwrap(),
-        " may"
+        response.logprobs[0].top[0].token_as_str().unwrap(),
+        " keeps"
     );
-    assert!(
-        response.logprobs[0].top_logprobs[0].logprob > response.logprobs[0].top_logprobs[1].logprob
-    );
+    assert_eq!(response.logprobs[0].top[1].token_as_str().unwrap(), " may");
+    assert!(response.logprobs[0].top[0].logprob > response.logprobs[0].top[1].logprob);
 }

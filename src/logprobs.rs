@@ -13,7 +13,7 @@ pub enum Logprobs {
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
-pub struct TopLogprob {
+pub struct Logprob {
     // The API returns both a UTF-8 String token and bytes as an array of numbers. We only
     // deserialize bytes as it is the better source of truth.
     /// Binary represtantation of the token, usually these bytes are UTF-8.
@@ -22,7 +22,7 @@ pub struct TopLogprob {
     pub logprob: f64,
 }
 
-impl TopLogprob {
+impl Logprob {
     pub fn token_as_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(&self.token)
     }

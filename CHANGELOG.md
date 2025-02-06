@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.19.0...aleph-alpha-client-v0.20.0) (2025-02-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename logprob outer struct to distribution
+
+### Features
+
+* expose token usage on chat request ([8e3cdc8](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/8e3cdc8f658a66a572bd886abf0a9cc744fa1875))
+* expose token usage on completion request ([fbdae55](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/fbdae55228dae306146d83e72a61b55159080d26))
+* rename logprob outer struct to distribution ([43e52ca](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/43e52ca9c013f36b3cc5e5dbd46b24168037950f))
+
 ## [0.19.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.18.1...aleph-alpha-client-v0.19.0) (2025-02-05)
 
 

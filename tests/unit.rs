@@ -14,7 +14,7 @@ async fn completion_with_luminous_base() {
     // Start a background HTTP server on a random local part
     let mock_server = MockServer::start().await;
 
-    let answer = r#"{"model_version":"2021-12","completions":[{"completion":"\n","finish_reason":"maximum_tokens"}]}"#;
+    let answer = r#"{"model_version":"2021-12","completions":[{"completion":"\n","finish_reason":"maximum_tokens"}],"num_tokens_prompt_total":5,"num_tokens_generated":1}"#;
     let body = r#"{
         "model": "luminous-base",
         "prompt": [{"type": "text", "data": "Hello,"}],

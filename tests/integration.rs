@@ -55,8 +55,6 @@ async fn completion_with_luminous_base() {
         .await
         .unwrap();
 
-    eprintln!("{}", response.completion);
-
     // Then
     assert!(!response.completion.is_empty())
 }
@@ -834,5 +832,25 @@ async fn show_token_usage_chat() {
 
     // Then
     assert_eq!(response.usage.prompt_tokens, 19);
+    assert_eq!(response.usage.completion_tokens, 3);
+}
+
+#[tokio::test]
+async fn show_token_usage_completion() {
+    // Given
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let task = TaskCompletion::from_text("An apple a day")
+        .with_maximum_tokens(3)
+        .with_logprobs(Logprobs::No);
+
+    // When
+    let response = client
+        .completion(&task, model, &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert_eq!(response.usage.prompt_tokens, 5);
     assert_eq!(response.usage.completion_tokens, 3);
 }

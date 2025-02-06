@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{http::Task, Distribution, Logprob, Logprobs, Prompt, StreamTask};
+use crate::{http::Task, Distribution, Logprob, Logprobs, Prompt, StreamTask, Usage};
 
 /// Completes a prompt. E.g. continues a text.
 pub struct TaskCompletion<'a> {
@@ -231,6 +231,8 @@ impl<'a> BodyCompletion<'a> {
 pub struct ResponseCompletion {
     model_version: String,
     completions: Vec<DeserializedCompletion>,
+    num_tokens_prompt_total: u32,
+    num_tokens_generated: u32,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -250,6 +252,7 @@ pub struct CompletionOutput {
     pub completion: String,
     pub finish_reason: String,
     pub logprobs: Vec<Distribution>,
+    pub usage: Usage,
 }
 
 impl Task for TaskCompletion<'_> {
@@ -289,6 +292,10 @@ impl Task for TaskCompletion<'_> {
                 completion_tokens,
                 self.logprobs.top_logprobs().unwrap_or_default(),
             ),
+            usage: Usage {
+                prompt_tokens: response.num_tokens_prompt_total,
+                completion_tokens: response.num_tokens_generated,
+            },
         }
     }
 }

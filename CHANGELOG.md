@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.20.0...aleph-alpha-client-v0.20.1) (2025-02-13)
+
+
+### Bug Fixes
+
+* expose StreamChunk ([4f2a3ff](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/4f2a3ff5de39a5844bd2accd9d71663eff478dfa))
+
 ## [0.20.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.19.0...aleph-alpha-client-v0.20.0) (2025-02-06)
 
 

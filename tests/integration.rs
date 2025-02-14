@@ -586,11 +586,12 @@ async fn stream_chat_with_pharia_1_llm_7b() {
         .unwrap();
 
     let mut events = Vec::new();
-    while let Some(Ok(event)) = stream.next().await {
+    while let Some(event) = stream.next().await {
         events.push(event);
     }
 
     // Then there are at least two chunks, with the second one having no role
+    let events = events.into_iter().collect::<Result<Vec<_>, _>>().unwrap();
     assert!(events.len() >= 2);
     assert_eq!(events[0].delta.role.as_ref().unwrap(), "assistant");
     assert_eq!(events[1].delta.role, None);

@@ -276,7 +276,7 @@ impl Client {
 
     /// Send a chat message to a model. Stream the response as a series of events.
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message};
+    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message, ChatStreamChunk};
     /// use futures_util::StreamExt;
     ///
     /// async fn print_stream_chat() -> Result<(), Error> {
@@ -293,7 +293,9 @@ impl Client {
     ///     // Send the message to the model.
     ///     let mut stream = client.stream_chat(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = stream.next().await {
-    ///          println!("{}", event.delta.content);
+    ///         if let ChatStreamChunk::Delta { delta } = event {
+    ///             println!("{}", delta.content);
+    ///         }
     ///     }
     ///     Ok(())
     /// }

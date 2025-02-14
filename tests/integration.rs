@@ -1,10 +1,11 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, ChatSampling, Client, CompletionEvent, Granularity, How, ImageScore,
-    ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
-    SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
-    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore,
+    cosine_similarity, ChatSampling, ChatStreamChunk, Client, CompletionEvent, Granularity, How,
+    ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
+    SemanticRepresentation, Stopping, StreamMessage, Task, TaskBatchSemanticEmbedding, TaskChat,
+    TaskCompletion, TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization,
+    TextScore,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -576,25 +577,32 @@ async fn stream_completion() {
 async fn stream_chat_with_pharia_1_llm_7b() {
     // Given a streaming completion task
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
-    let message = Message::user("Hello,");
+    let message = Message::user("An apple a day");
     let task = TaskChat::with_messages(vec![message]).with_maximum_tokens(7);
 
     // When the events are streamed and collected
-    let mut stream = client
+    let stream = client
         .stream_chat(&task, "pharia-1-llm-7b-control", &How::default())
         .await
         .unwrap();
 
-    let mut events = Vec::new();
-    while let Some(event) = stream.next().await {
-        events.push(event);
-    }
+    let events = stream.collect::<Vec<_>>().await;
 
-    // Then there are at least two chunks, with the second one having no role
-    let events = events.into_iter().collect::<Result<Vec<_>, _>>().unwrap();
-    assert!(events.len() >= 2);
-    assert_eq!(events[0].delta.role.as_ref().unwrap(), "assistant");
-    assert_eq!(events[1].delta.role, None);
+    // Then we receive three events, with the last one being a finished event
+    assert_eq!(events.len(), 3);
+    assert!(matches!(
+        events[0],
+        Ok(ChatStreamChunk::Delta {
+            delta: StreamMessage { role: Some(_), .. }
+        })
+    ));
+    assert!(matches!(
+        events[1],
+        Ok(ChatStreamChunk::Delta {
+            delta: StreamMessage { role: None, .. }
+        })
+    ));
+    assert!(matches!(&events[2], Ok(ChatStreamChunk::Finished { reason }) if reason == "stop"));
 }
 
 #[tokio::test]

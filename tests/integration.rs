@@ -1,11 +1,11 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, ChatSampling, ChatStreamChunk, Client, CompletionEvent, Granularity, How,
+    cosine_similarity, ChatChunk, ChatSampling, Client, CompletionEvent, Granularity, How,
     ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
-    SemanticRepresentation, Stopping, StreamMessage, Task, TaskBatchSemanticEmbedding, TaskChat,
-    TaskCompletion, TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization,
-    TextScore,
+    SemanticRepresentation, Stopping, StreamChatEvent, StreamMessage, Task,
+    TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
+    TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -589,20 +589,23 @@ async fn stream_chat_with_pharia_1_llm_7b() {
     let events = stream.collect::<Vec<_>>().await;
 
     // Then we receive three events, with the last one being a finished event
-    assert_eq!(events.len(), 3);
+    assert_eq!(events.len(), 4);
     assert!(matches!(
         events[0],
-        Ok(ChatStreamChunk::Delta {
+        Ok(StreamChatEvent::Chunk(ChatChunk::Delta {
             delta: StreamMessage { role: Some(_), .. }
-        })
+        }))
     ));
     assert!(matches!(
         events[1],
-        Ok(ChatStreamChunk::Delta {
+        Ok(StreamChatEvent::Chunk(ChatChunk::Delta {
             delta: StreamMessage { role: None, .. }
-        })
+        }))
     ));
-    assert!(matches!(&events[2], Ok(ChatStreamChunk::Finished { reason }) if reason == "stop"));
+    assert!(
+        matches!(&events[2], Ok(StreamChatEvent::Chunk(ChatChunk::Finished { reason })) if reason == "stop")
+    );
+    assert!(matches!(&events[3], Ok(StreamChatEvent::Usage(_))));
 }
 
 #[tokio::test]

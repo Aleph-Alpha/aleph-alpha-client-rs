@@ -334,7 +334,9 @@ pub enum Error {
 
 #[cfg(test)]
 mod tests {
-    use crate::{chat::ChatEvent, completion::CompletionEvent, ChatStreamChunk, StreamMessage};
+    use crate::{
+        chat::StreamChatResponse, completion::CompletionEvent, ChatStreamChunk, StreamMessage,
+    };
 
     use super::*;
 
@@ -385,7 +387,7 @@ mod tests {
         let bytes = b"data: {\"id\":\"831e41b4-2382-4b08-990e-0a3859967f43\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"logprobs\":null}],\"created\":1729782822,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a chat stream chunk
@@ -400,7 +402,7 @@ mod tests {
         let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"content\":\"Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.\"},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a chat stream chunk
@@ -415,7 +417,7 @@ mod tests {
         let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"delta\":{},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a chat stream chunk with a done event

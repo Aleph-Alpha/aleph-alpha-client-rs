@@ -177,7 +177,7 @@ pub struct Distribution {
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
-pub struct ResponseChat {
+pub struct ChatResponse {
     choices: Vec<ResponseChoice>,
     usage: Usage,
 }
@@ -258,7 +258,7 @@ impl<'a> ChatBody<'a> {
 impl Task for TaskChat<'_> {
     type Output = ChatOutput;
 
-    type ResponseBody = ResponseChat;
+    type ResponseBody = ChatResponse;
 
     fn build_request(
         &self,
@@ -314,14 +314,14 @@ pub enum ChatStreamChunk {
 /// Event received from a chat completion stream. As the crate does not support multiple
 /// chat completions, there will always exactly one choice item.
 #[derive(Deserialize)]
-pub struct ChatEvent {
+pub struct StreamChatResponse {
     pub choices: Vec<ChatStreamChunk>,
 }
 
 impl StreamTask for TaskChat<'_> {
     type Output = ChatStreamChunk;
 
-    type ResponseBody = ChatEvent;
+    type ResponseBody = StreamChatResponse;
 
     fn build_request(
         &self,

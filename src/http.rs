@@ -203,6 +203,10 @@ impl HttpClient {
         String::from_utf8_lossy(bytes)
             .split("data: ")
             .skip(1)
+            // The last stream event for the chat endpoint (not for the completion endpoint) always is "[DONE]"
+            // While we could model this as a variant of the `ChatStreamChunk` enum, the value of this is
+            // unclear, so we ignore it here.
+            .filter(|s| s.trim() != "[DONE]")
             .map(|s| {
                 serde_json::from_str(s).map_err(|e| Error::InvalidStream {
                     deserialization_error: e.to_string(),
@@ -330,7 +334,7 @@ pub enum Error {
 
 #[cfg(test)]
 mod tests {
-    use crate::{chat::ChatEvent, completion::CompletionEvent};
+    use crate::{chat::StreamChatResponse, completion::CompletionEvent, ChatChunk, StreamMessage};
 
     use super::*;
 
@@ -376,16 +380,33 @@ mod tests {
     }
 
     #[test]
+    fn chat_usage_event_is_parsed() {
+        // Given some bytes
+        let bytes = b"data: {\"id\": \"67c5b5f2-6672-4b0b-82b1-cc844127b214\",\"choices\": [],\"created\": 1739539146,\"model\": \"pharia-1-llm-7b-control\",\"system_fingerprint\": \".unknown.\",\"object\": \"chat.completion.chunk\",\"usage\": {\"prompt_tokens\": 20,\"completion_tokens\": 10,\"total_tokens\": 30}}";
+
+        // When they are parsed
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
+        let event = events.first().unwrap().as_ref().unwrap();
+
+        // Then the event has a usage
+        assert_eq!(event.usage.as_ref().unwrap().prompt_tokens, 20);
+        assert_eq!(event.usage.as_ref().unwrap().completion_tokens, 10);
+    }
+
+    #[test]
     fn chat_stream_chunk_event_is_parsed() {
         // Given some bytes
         let bytes = b"data: {\"id\":\"831e41b4-2382-4b08-990e-0a3859967f43\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"logprobs\":null}],\"created\":1729782822,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a chat stream chunk
-        assert_eq!(event.choices[0].delta.role.as_ref().unwrap(), "assistant");
+        assert_eq!(event.choices.len(), 1);
+        assert!(
+            matches!(&event.choices[0], ChatChunk::Delta { delta: StreamMessage { role: Some(role), .. } } if role == "assistant")
+        );
     }
 
     #[test]
@@ -394,10 +415,26 @@ mod tests {
         let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"content\":\"Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.\"},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<ChatEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a chat stream chunk
-        assert_eq!(event.choices[0].delta.content, "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.");
+        assert_eq!(event.choices.len(), 1);
+        assert!(
+            matches!(&event.choices[0], ChatChunk::Delta { delta: StreamMessage { content, .. } } if content == "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.")
+        );
+    }
+
+    #[test]
+    fn chat_stream_chunk_without_content_but_with_finish_reason_is_parsed() {
+        // Given some bytes without a role or content but with a finish reason
+        let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"delta\":{},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+
+        // When they are parsed
+        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
+        let event = events.first().unwrap().as_ref().unwrap();
+
+        // Then the event is a chat stream chunk with a done event
+        assert!(matches!(&event.choices[0], ChatChunk::Finished { reason } if reason == "stop"));
     }
 }

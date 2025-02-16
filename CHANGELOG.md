@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.21.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.20.1...aleph-alpha-client-v0.21.0) (2025-02-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* expose token usage information for chat stream
+* streamline naming of chat response and stream chat response
+* model chat stream response as enum
+
+### Features
+
+* expose token usage information for chat stream ([983f350](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/983f350cb6b5ccbd98639ccd59a7319c760461dc))
+* model chat stream response as enum ([8503f20](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/8503f20bc36e31115bbf290645bd0250e8d056e2))
+
+
+### Code Refactoring
+
+* streamline naming of chat response and stream chat response ([c572b51](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/c572b515c39aad2f8286063b7eab369fa7eba78d))
+
 ## [0.20.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.20.0...aleph-alpha-client-v0.20.1) (2025-02-13)
 
 

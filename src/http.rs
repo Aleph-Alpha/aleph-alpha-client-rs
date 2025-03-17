@@ -335,7 +335,9 @@ pub enum Error {
 #[cfg(test)]
 mod tests {
     use crate::{
-        chat::StreamChatResponse, completion::DeserializedCompletionEvent, ChatChunk, StreamMessage,
+        chat::{DeserializedChatChunk, StreamChatResponse},
+        completion::DeserializedCompletionEvent,
+        StreamMessage,
     };
 
     use super::*;
@@ -412,7 +414,7 @@ mod tests {
         // Then the event is a chat stream chunk
         assert_eq!(event.choices.len(), 1);
         assert!(
-            matches!(&event.choices[0], ChatChunk::Delta { delta: StreamMessage { role: Some(role), .. } } if role == "assistant")
+            matches!(&event.choices[0], DeserializedChatChunk::Delta { delta: StreamMessage { role: Some(role), .. }, .. } if role == "assistant")
         );
     }
 
@@ -428,7 +430,7 @@ mod tests {
         // Then the event is a chat stream chunk
         assert_eq!(event.choices.len(), 1);
         assert!(
-            matches!(&event.choices[0], ChatChunk::Delta { delta: StreamMessage { content, .. } } if content == "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.")
+            matches!(&event.choices[0], DeserializedChatChunk::Delta { delta: StreamMessage { content, .. }, .. } if content == "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.")
         );
     }
 
@@ -442,6 +444,8 @@ mod tests {
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a chat stream chunk with a done event
-        assert!(matches!(&event.choices[0], ChatChunk::Finished { reason } if reason == "stop"));
+        assert!(
+            matches!(&event.choices[0], DeserializedChatChunk::Finished { finish_reason } if  finish_reason == "stop")
+        );
     }
 }

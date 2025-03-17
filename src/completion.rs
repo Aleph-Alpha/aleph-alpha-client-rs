@@ -335,68 +335,51 @@ fn completion_logprobs_to_canonical(
     logprobs
 }
 
-/// Describes a chunk of a completion stream
-#[derive(Deserialize)]
-pub struct DeserializedStreamChunk {
-    /// The completion of the stream.
-    pub completion: String,
-    /// Completion with special tokens still included
-    pub raw_completion: Option<String>,
-    #[serde(default)]
-    log_probs: Vec<HashMap<String, f64>>,
-    #[serde(default)]
-    completion_tokens: Vec<String>,
-}
-
-/// Describes a chunk of a completion stream
-#[derive(Deserialize, Debug, PartialEq)]
-pub struct StreamChunk {
-    /// The completion of the stream.
-    pub completion: String,
-    /// Log probabilities of the completion tokens if requested via logprobs parameter in request.
-    pub logprobs: Vec<Distribution>,
-}
-
-/// Denotes the end of a completion stream.
-///
-/// The index of the stream that is being terminated is not deserialized.
-/// It is only relevant if multiple completion streams are requested, (see parameter n),
-/// which is not supported by this crate yet.
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct StreamSummary {
-    /// Model name and version (if any) of the used model for inference.
-    pub model_version: String,
-    /// The reason why the model stopped generating new tokens.
-    pub finish_reason: String,
-}
-
-/// Denotes the end of all completion streams.
-#[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct CompletionSummary {
-    /// Number of tokens combined across all completion tasks.
-    /// In particular, if you set best_of or n to a number larger than 1 then we report the
-    /// combined prompt token count for all best_of or n tasks.
-    pub num_tokens_prompt_total: u32,
-    /// Number of tokens combined across all completion tasks.
-    /// If multiple completions are returned or best_of is set to a value greater than 1 then
-    /// this value contains the combined generated token count.
-    pub num_tokens_generated: u32,
-}
-
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum DeserializedCompletionEvent {
-    StreamChunk(DeserializedStreamChunk),
-    StreamSummary(StreamSummary),
-    CompletionSummary(CompletionSummary),
+    StreamChunk {
+        /// The completion of the stream.
+        completion: String,
+        /// Completion with special tokens still included
+        raw_completion: Option<String>,
+        #[serde(default)]
+        log_probs: Vec<HashMap<String, f64>>,
+        #[serde(default)]
+        completion_tokens: Vec<String>,
+    },
+    StreamSummary {
+        /// The reason why the model stopped generating new tokens.
+        finish_reason: String,
+    },
+    CompletionSummary {
+        /// Number of tokens combined across all completion tasks.
+        /// In particular, if you set best_of or n to a number larger than 1 then we report the
+        /// combined prompt token count for all best_of or n tasks.
+        num_tokens_prompt_total: u32,
+        /// Number of tokens combined across all completion tasks.
+        /// If multiple completions are returned or best_of is set to a value greater than 1 then
+        /// this value contains the combined generated token count.
+        num_tokens_generated: u32,
+    },
 }
 
 #[derive(Debug, PartialEq)]
 pub enum CompletionEvent {
-    StreamChunk(StreamChunk),
-    StreamSummary(StreamSummary),
-    CompletionSummary(CompletionSummary),
+    StreamChunk {
+        /// The completion of the stream.
+        completion: String,
+        /// Log probabilities of the completion tokens if requested via logprobs parameter in request.
+        logprobs: Vec<Distribution>,
+    },
+    StreamSummary {
+        /// The reason why the model stopped generating new tokens.
+        finish_reason: String,
+    },
+    CompletionSummary {
+        usage: Usage,
+    },
 }
 
 impl StreamTask for TaskCompletion<'_> {
@@ -416,12 +399,12 @@ impl StreamTask for TaskCompletion<'_> {
 
     fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
         match response {
-            DeserializedCompletionEvent::StreamChunk(DeserializedStreamChunk {
+            DeserializedCompletionEvent::StreamChunk {
                 completion,
                 raw_completion,
                 log_probs,
                 completion_tokens,
-            }) => CompletionEvent::StreamChunk(StreamChunk {
+            } => CompletionEvent::StreamChunk {
                 completion: if self.special_tokens {
                     raw_completion.expect("Missing raw completion")
                 } else {
@@ -432,13 +415,19 @@ impl StreamTask for TaskCompletion<'_> {
                     completion_tokens,
                     self.logprobs.top_logprobs().unwrap_or_default(),
                 ),
-            }),
-            DeserializedCompletionEvent::StreamSummary(summary) => {
-                CompletionEvent::StreamSummary(summary)
+            },
+            DeserializedCompletionEvent::StreamSummary { finish_reason } => {
+                CompletionEvent::StreamSummary { finish_reason }
             }
-            DeserializedCompletionEvent::CompletionSummary(summary) => {
-                CompletionEvent::CompletionSummary(summary)
-            }
+            DeserializedCompletionEvent::CompletionSummary {
+                num_tokens_prompt_total,
+                num_tokens_generated,
+            } => CompletionEvent::CompletionSummary {
+                usage: Usage {
+                    prompt_tokens: num_tokens_prompt_total,
+                    completion_tokens: num_tokens_generated,
+                },
+            },
         }
     }
 }

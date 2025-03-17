@@ -602,7 +602,7 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
         vec![
             CompletionEvent::StreamChunk(StreamChunk {
                 index: 0,
-                completion: " \n\n Keeps the doctor away".to_owned()
+                completion: " \n\n Keeps the doctor away<|endoftext|>".to_owned()
             }),
             CompletionEvent::StreamSummary(StreamSummary {
                 model_version: ".unknown.".to_owned(),

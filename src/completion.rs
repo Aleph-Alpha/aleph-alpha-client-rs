@@ -420,7 +420,14 @@ impl StreamTask for TaskCompletion<'_> {
                 index,
                 completion,
                 raw_completion,
-            }) => CompletionEvent::StreamChunk(StreamChunk { index, completion }),
+            }) => CompletionEvent::StreamChunk(StreamChunk {
+                index,
+                completion: if self.special_tokens {
+                    raw_completion.expect("Missing raw completion")
+                } else {
+                    completion
+                },
+            }),
             DeserializedCompletionEvent::StreamSummary(summary) => {
                 CompletionEvent::StreamSummary(summary)
             }

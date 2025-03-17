@@ -665,19 +665,47 @@ async fn stream_chat_with_pharia_1_llm_7b() {
     assert!(matches!(
         events[0],
         Ok(StreamChatEvent::Chunk(ChatChunk::Delta {
-            delta: StreamMessage { role: Some(_), .. }
+            delta: StreamMessage { role: Some(_), .. },
+            ..
         }))
     ));
     assert!(matches!(
         events[1],
         Ok(StreamChatEvent::Chunk(ChatChunk::Delta {
-            delta: StreamMessage { role: None, .. }
+            delta: StreamMessage { role: None, .. },
+            ..
         }))
     ));
     assert!(
         matches!(&events[2], Ok(StreamChatEvent::Chunk(ChatChunk::Finished { reason })) if reason == "stop")
     );
     assert!(matches!(&events[3], Ok(StreamChatEvent::Usage(_))));
+}
+
+#[tokio::test]
+async fn stream_chat_with_logprobs() {
+    // Given a streaming completion task
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let message = Message::user("An apple a day");
+    let task = TaskChat::with_messages(vec![message])
+        .with_maximum_tokens(2)
+        .with_logprobs(Logprobs::Sampled);
+
+    // When the events are streamed and collected
+    let mut stream = client
+        .stream_chat(&task, "pharia-1-llm-7b-control", &How::default())
+        .await
+        .unwrap();
+
+    // Role
+    stream.next().await;
+    // Content
+    let event = stream.next().await.unwrap().unwrap();
+    let StreamChatEvent::Chunk(ChatChunk::Delta { logprobs, .. }) = event else {
+        panic!("Unexpected event type")
+    };
+    assert_eq!(logprobs[0].sampled.token_as_str().unwrap(), " Keep");
+    assert_eq!(logprobs[1].sampled.token_as_str().unwrap(), "s");
 }
 
 #[tokio::test]

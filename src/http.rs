@@ -165,11 +165,11 @@ impl HttpClient {
         Ok(answer)
     }
 
-    pub async fn stream_output_of<T: StreamJob>(
+    pub async fn stream_output_of<'task, T: StreamJob + Send + Sync + 'task>(
         &self,
-        task: &T,
+        task: T,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<T::Output, Error>> + Send>>, Error>
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<T::Output, Error>> + Send + 'task>>, Error>
     where
         T::Output: 'static,
     {
@@ -183,7 +183,7 @@ impl HttpClient {
                     Ok(bytes) => {
                         let events = Self::parse_stream_event::<T::ResponseBody>(bytes.as_ref());
                         for event in events {
-                            yield event.map(|b| T::body_to_output(b));
+                            yield event.map(|b| task.body_to_output(b));
                         }
                     }
                     Err(e) => {

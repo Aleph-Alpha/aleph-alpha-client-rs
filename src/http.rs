@@ -334,7 +334,9 @@ pub enum Error {
 
 #[cfg(test)]
 mod tests {
-    use crate::{chat::StreamChatResponse, completion::CompletionEvent, ChatChunk, StreamMessage};
+    use crate::{
+        chat::StreamChatResponse, completion::DeserializedCompletionEvent, ChatChunk, StreamMessage,
+    };
 
     use super::*;
 
@@ -344,12 +346,12 @@ mod tests {
         let bytes = b"data: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\" The New York Times, May 15\"}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<CompletionEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<DeserializedCompletionEvent>(bytes);
         let event = events.first().unwrap().as_ref().unwrap();
 
         // Then the event is a stream chunk
         match event {
-            CompletionEvent::StreamChunk(chunk) => assert_eq!(chunk.index, 0),
+            DeserializedCompletionEvent::StreamChunk(chunk) => assert_eq!(chunk.index, 0),
             _ => panic!("Expected a stream chunk"),
         }
     }
@@ -360,19 +362,19 @@ mod tests {
         let bytes = b"data: {\"type\":\"stream_summary\",\"index\":0,\"model_version\":\"2022-04\",\"finish_reason\":\"maximum_tokens\"}\n\ndata: {\"type\":\"completion_summary\",\"num_tokens_prompt_total\":1,\"num_tokens_generated\":7}\n\n";
 
         // When they are parsed
-        let events = HttpClient::parse_stream_event::<CompletionEvent>(bytes);
+        let events = HttpClient::parse_stream_event::<DeserializedCompletionEvent>(bytes);
 
         // Then the first event is a stream summary and the last event is a completion summary
         let first = events.first().unwrap().as_ref().unwrap();
         match first {
-            CompletionEvent::StreamSummary(summary) => {
+            DeserializedCompletionEvent::StreamSummary(summary) => {
                 assert_eq!(summary.finish_reason, "maximum_tokens")
             }
             _ => panic!("Expected a completion summary"),
         }
         let second = events.last().unwrap().as_ref().unwrap();
         match second {
-            CompletionEvent::CompletionSummary(summary) => {
+            DeserializedCompletionEvent::CompletionSummary(summary) => {
                 assert_eq!(summary.num_tokens_generated, 7)
             }
             _ => panic!("Expected a completion summary"),

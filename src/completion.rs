@@ -336,7 +336,19 @@ fn completion_logprobs_to_canonical(
 }
 
 /// Describes a chunk of a completion stream
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
+pub struct DeserializedStreamChunk {
+    /// The index of the stream that this chunk belongs to.
+    /// This is relevant if multiple completion streams are requested (see parameter n).
+    pub index: u32,
+    /// The completion of the stream.
+    pub completion: String,
+    /// Completion with special tokens still included
+    pub raw_completion: Option<String>,
+}
+
+/// Describes a chunk of a completion stream
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct StreamChunk {
     /// The index of the stream that this chunk belongs to.
     /// This is relevant if multiple completion streams are requested (see parameter n).
@@ -350,7 +362,7 @@ pub struct StreamChunk {
 /// The index of the stream that is being terminated is not deserialized.
 /// It is only relevant if multiple completion streams are requested, (see parameter n),
 /// which is not supported by this crate yet.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct StreamSummary {
     /// Model name and version (if any) of the used model for inference.
     pub model_version: String,
@@ -359,7 +371,7 @@ pub struct StreamSummary {
 }
 
 /// Denotes the end of all completion streams.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct CompletionSummary {
     /// Number of tokens combined across all completion tasks.
     /// In particular, if you set best_of or n to a number larger than 1 then we report the
@@ -374,6 +386,13 @@ pub struct CompletionSummary {
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
+pub enum DeserializedCompletionEvent {
+    StreamChunk(DeserializedStreamChunk),
+    StreamSummary(StreamSummary),
+    CompletionSummary(CompletionSummary),
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum CompletionEvent {
     StreamChunk(StreamChunk),
     StreamSummary(StreamSummary),
@@ -383,7 +402,7 @@ pub enum CompletionEvent {
 impl StreamTask for TaskCompletion<'_> {
     type Output = CompletionEvent;
 
-    type ResponseBody = CompletionEvent;
+    type ResponseBody = DeserializedCompletionEvent;
 
     fn build_request(
         &self,
@@ -396,7 +415,19 @@ impl StreamTask for TaskCompletion<'_> {
     }
 
     fn body_to_output(response: Self::ResponseBody) -> Self::Output {
-        response
+        match response {
+            DeserializedCompletionEvent::StreamChunk(DeserializedStreamChunk {
+                index,
+                completion,
+                raw_completion,
+            }) => CompletionEvent::StreamChunk(StreamChunk { index, completion }),
+            DeserializedCompletionEvent::StreamSummary(summary) => {
+                CompletionEvent::StreamSummary(summary)
+            }
+            DeserializedCompletionEvent::CompletionSummary(summary) => {
+                CompletionEvent::CompletionSummary(summary)
+            }
+        }
     }
 }
 

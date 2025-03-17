@@ -1,11 +1,11 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, ChatChunk, ChatSampling, Client, CompletionEvent, Granularity, How,
-    ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
-    SemanticRepresentation, Stopping, StreamChatEvent, StreamMessage, Task,
-    TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
-    TaskSemanticEmbedding, TaskTokenization, TextScore,
+    cosine_similarity, ChatChunk, ChatSampling, Client, CompletionEvent, CompletionSummary,
+    Granularity, How, ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt,
+    PromptGranularity, Sampling, SemanticRepresentation, Stopping, StreamChatEvent, StreamChunk,
+    StreamMessage, StreamSummary, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
+    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -571,6 +571,49 @@ async fn stream_completion() {
         events[events.len() - 1],
         CompletionEvent::CompletionSummary(_)
     ));
+}
+
+#[tokio::test]
+async fn stream_completion_special_tokens() {
+    // Given a streaming completion task
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let task = TaskCompletion::from_text(
+        "<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+    )
+    .with_maximum_tokens(10)
+    .with_special_tokens();
+
+    // When the events are streamed and collected
+    let mut stream = client
+        .stream_completion(&task, "pharia-1-llm-7b-control", &How::default())
+        .await
+        .unwrap();
+
+    let mut events = Vec::new();
+    while let Some(Ok(event)) = stream.next().await {
+        events.push(event);
+    }
+
+    // Then there are at least one chunk, one summary and one completion summary
+    assert_eq!(
+        events,
+        vec![
+            CompletionEvent::StreamChunk(StreamChunk {
+                index: 0,
+                completion: " \n\n Keeps the doctor away".to_owned()
+            }),
+            CompletionEvent::StreamSummary(StreamSummary {
+                model_version: ".unknown.".to_owned(),
+                finish_reason: "end_of_text".to_owned()
+            }),
+            CompletionEvent::CompletionSummary(CompletionSummary {
+                num_tokens_prompt_total: 16,
+                num_tokens_generated: 9
+            })
+        ]
+    );
 }
 
 #[tokio::test]

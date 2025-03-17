@@ -1,11 +1,10 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, ChatChunk, ChatSampling, Client, CompletionEvent, Granularity, How,
+    cosine_similarity, ChatEvent, ChatSampling, Client, CompletionEvent, Granularity, How,
     ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
-    SemanticRepresentation, Stopping, StreamChatEvent, StreamMessage, Task,
-    TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
-    TaskSemanticEmbedding, TaskTokenization, TextScore, Usage,
+    SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
+    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore, Usage,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -661,25 +660,10 @@ async fn stream_chat_with_pharia_1_llm_7b() {
     let events = stream.collect::<Vec<_>>().await;
 
     // Then we receive three events, with the last one being a finished event
-    assert_eq!(events.len(), 4);
-    assert!(matches!(
-        events[0],
-        Ok(StreamChatEvent::Chunk(ChatChunk::Delta {
-            delta: StreamMessage { role: Some(_), .. },
-            ..
-        }))
-    ));
-    assert!(matches!(
-        events[1],
-        Ok(StreamChatEvent::Chunk(ChatChunk::Delta {
-            delta: StreamMessage { role: None, .. },
-            ..
-        }))
-    ));
-    assert!(
-        matches!(&events[2], Ok(StreamChatEvent::Chunk(ChatChunk::Finished { reason })) if reason == "stop")
-    );
-    assert!(matches!(&events[3], Ok(StreamChatEvent::Usage(_))));
+    assert_eq!(events.len(), 3);
+    assert!(matches!(events[0], Ok(ChatEvent::Delta { .. })));
+    assert!(matches!(&events[1], Ok(ChatEvent::Finished { reason }) if reason == "stop"));
+    assert!(matches!(events[2], Ok(ChatEvent::Summary { .. })));
 }
 
 #[tokio::test]
@@ -697,11 +681,8 @@ async fn stream_chat_with_logprobs() {
         .await
         .unwrap();
 
-    // Role
-    stream.next().await;
-    // Content
     let event = stream.next().await.unwrap().unwrap();
-    let StreamChatEvent::Chunk(ChatChunk::Delta { logprobs, .. }) = event else {
+    let ChatEvent::Delta { logprobs, .. } = event else {
         panic!("Unexpected event type")
     };
     assert_eq!(logprobs[0].sampled.token_as_str().unwrap(), " Keep");

@@ -43,10 +43,7 @@ use std::{pin::Pin, time::Duration};
 use tokenizers::Tokenizer;
 
 pub use self::{
-    chat::{
-        ChatChunk, ChatOutput, ChatSampling, Distribution, Message, StreamChatEvent, StreamMessage,
-        TaskChat, Usage,
-    },
+    chat::{ChatEvent, ChatOutput, ChatSampling, Distribution, Message, TaskChat, Usage},
     completion::{CompletionEvent, CompletionOutput, Sampling, Stopping, TaskCompletion},
     detokenization::{DetokenizationOutput, TaskDetokenization},
     explanation::{
@@ -274,7 +271,7 @@ impl Client {
 
     /// Send a chat message to a model. Stream the response as a series of events.
     /// ```no_run
-    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message, ChatChunk, StreamChatEvent};
+    /// use aleph_alpha_client::{Client, How, TaskChat, Error, Message, ChatEvent};
     /// use futures_util::StreamExt;
     ///
     /// async fn print_stream_chat() -> Result<(), Error> {
@@ -291,8 +288,8 @@ impl Client {
     ///     // Send the message to the model.
     ///     let mut stream = client.stream_chat(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = stream.next().await {
-    ///         if let StreamChatEvent::Chunk(ChatChunk::Delta { delta, logprobs: _ }) = event {
-    ///             println!("{}", delta.content);
+    ///         if let ChatEvent::Delta { content, logprobs: _ } = event {
+    ///             println!("{}", content);
     ///         }
     ///     }
     ///     Ok(())
@@ -303,8 +300,7 @@ impl Client {
         task: &'task TaskChat<'_>,
         model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamChatEvent, Error>> + Send + 'task>>, Error>
-    {
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<ChatEvent, Error>> + Send + 'task>>, Error> {
         self.http_client
             .stream_output_of(StreamTask::with_model(task, model), how)
             .await

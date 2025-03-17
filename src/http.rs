@@ -183,7 +183,16 @@ impl HttpClient {
                     Ok(bytes) => {
                         let events = Self::parse_stream_event::<T::ResponseBody>(bytes.as_ref());
                         for event in events {
-                            yield event.map(|b| task.body_to_output(b));
+                            match event {
+                                // Check if the output should be yielded or skipped
+                                Ok(b) => if let Some(output) = task.body_to_output(b) {
+                                    yield Ok(output);
+                                }
+                                Err(e) => {
+                                    yield Err(e);
+                                }
+                            }
+
                         }
                     }
                     Err(e) => {
@@ -335,9 +344,8 @@ pub enum Error {
 #[cfg(test)]
 mod tests {
     use crate::{
-        chat::{DeserializedChatChunk, StreamChatResponse},
+        chat::{DeserializedChatChunk, StreamChatResponse, StreamMessage},
         completion::DeserializedCompletionEvent,
-        StreamMessage,
     };
 
     use super::*;

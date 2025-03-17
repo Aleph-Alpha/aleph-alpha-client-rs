@@ -219,8 +219,8 @@ impl Client {
     ///     // Retrieve stream from API
     ///     let mut stream = client.stream_completion(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = stream.next().await {
-    ///         if let CompletionEvent::StreamChunk(chunk) = event {
-    ///             println!("{}", chunk.completion);
+    ///         if let CompletionEvent::StreamChunk { completion, logprobs: _ } = event {
+    ///             println!("{}", completion);
     ///         }
     ///     }
     ///     Ok(())
@@ -291,7 +291,7 @@ impl Client {
     ///     // Send the message to the model.
     ///     let mut stream = client.stream_chat(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = stream.next().await {
-    ///         if let StreamChatEvent::Chunk(ChatChunk::Delta { delta }) = event {
+    ///         if let StreamChatEvent::Chunk(ChatChunk::Delta { delta, logprobs: _ }) = event {
     ///             println!("{}", delta.content);
     ///         }
     ///     }

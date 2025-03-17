@@ -704,9 +704,7 @@ async fn stop_sequences_request() {
         .await
         .unwrap();
 
-    // Then the finish reason is `content_filter`
-    // Actually, it should be `stop`, but the api scheduler is inconsistent here
-    assert_eq!(response.finish_reason, "content_filter");
+    assert_eq!(response.finish_reason, "stop");
 }
 
 #[tokio::test]

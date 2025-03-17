@@ -351,8 +351,8 @@ mod tests {
 
         // Then the event is a stream chunk
         match event {
-            DeserializedCompletionEvent::StreamChunk(chunk) => {
-                assert_eq!(chunk.completion, " The New York Times, May 15")
+            DeserializedCompletionEvent::StreamChunk { completion, .. } => {
+                assert_eq!(completion, " The New York Times, May 15")
             }
             _ => panic!("Expected a stream chunk"),
         }
@@ -369,15 +369,18 @@ mod tests {
         // Then the first event is a stream summary and the last event is a completion summary
         let first = events.first().unwrap().as_ref().unwrap();
         match first {
-            DeserializedCompletionEvent::StreamSummary(summary) => {
-                assert_eq!(summary.finish_reason, "maximum_tokens")
+            DeserializedCompletionEvent::StreamSummary { finish_reason } => {
+                assert_eq!(finish_reason, "maximum_tokens")
             }
             _ => panic!("Expected a completion summary"),
         }
         let second = events.last().unwrap().as_ref().unwrap();
         match second {
-            DeserializedCompletionEvent::CompletionSummary(summary) => {
-                assert_eq!(summary.num_tokens_generated, 7)
+            DeserializedCompletionEvent::CompletionSummary {
+                num_tokens_generated,
+                ..
+            } => {
+                assert_eq!(*num_tokens_generated, 7)
             }
             _ => panic!("Expected a completion summary"),
         }

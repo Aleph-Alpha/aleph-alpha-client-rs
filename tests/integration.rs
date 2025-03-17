@@ -1,11 +1,11 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, ChatChunk, ChatSampling, Client, CompletionEvent, CompletionSummary,
-    Granularity, How, ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt,
-    PromptGranularity, Sampling, SemanticRepresentation, Stopping, StreamChatEvent, StreamChunk,
-    StreamMessage, StreamSummary, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
-    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore,
+    cosine_similarity, ChatChunk, ChatSampling, Client, CompletionEvent, Granularity, How,
+    ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
+    SemanticRepresentation, Stopping, StreamChatEvent, StreamMessage, Task,
+    TaskBatchSemanticEmbedding, TaskChat, TaskCompletion, TaskDetokenization, TaskExplanation,
+    TaskSemanticEmbedding, TaskTokenization, TextScore, Usage,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -561,15 +561,15 @@ async fn stream_completion() {
     assert!(events.len() >= 3);
     assert!(matches!(
         events[events.len() - 3],
-        CompletionEvent::StreamChunk(_)
+        CompletionEvent::StreamChunk { .. }
     ));
     assert!(matches!(
         events[events.len() - 2],
-        CompletionEvent::StreamSummary(_)
+        CompletionEvent::StreamSummary { .. }
     ));
     assert!(matches!(
         events[events.len() - 1],
-        CompletionEvent::CompletionSummary(_)
+        CompletionEvent::CompletionSummary { .. }
     ));
 }
 
@@ -600,18 +600,19 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
     assert_eq!(
         events,
         vec![
-            CompletionEvent::StreamChunk(StreamChunk {
+            CompletionEvent::StreamChunk {
                 completion: " \n\n Keeps the doctor away<|endoftext|>".to_owned(),
                 logprobs: vec![]
-            }),
-            CompletionEvent::StreamSummary(StreamSummary {
-                model_version: ".unknown.".to_owned(),
+            },
+            CompletionEvent::StreamSummary {
                 finish_reason: "end_of_text".to_owned()
-            }),
-            CompletionEvent::CompletionSummary(CompletionSummary {
-                num_tokens_prompt_total: 16,
-                num_tokens_generated: 9
-            })
+            },
+            CompletionEvent::CompletionSummary {
+                usage: Usage {
+                    prompt_tokens: 16,
+                    completion_tokens: 9,
+                }
+            }
         ]
     );
 }
@@ -636,12 +637,12 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
 
     let event = stream.next().await.unwrap().unwrap();
 
-    let CompletionEvent::StreamChunk(chunk) = event else {
+    let CompletionEvent::StreamChunk { logprobs, .. } = event else {
         panic!("Unexpected event type");
     };
 
-    assert_eq!(chunk.logprobs[0].sampled.token_as_str().unwrap(), " Keep");
-    assert_eq!(chunk.logprobs[1].sampled.token_as_str().unwrap(), "s");
+    assert_eq!(logprobs[0].sampled.token_as_str().unwrap(), " Keep");
+    assert_eq!(logprobs[1].sampled.token_as_str().unwrap(), "s");
 }
 
 #[tokio::test]

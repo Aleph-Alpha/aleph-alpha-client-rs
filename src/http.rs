@@ -351,7 +351,9 @@ mod tests {
 
         // Then the event is a stream chunk
         match event {
-            DeserializedCompletionEvent::StreamChunk(chunk) => assert_eq!(chunk.index, 0),
+            DeserializedCompletionEvent::StreamChunk(chunk) => {
+                assert_eq!(chunk.completion, " The New York Times, May 15")
+            }
             _ => panic!("Expected a stream chunk"),
         }
     }

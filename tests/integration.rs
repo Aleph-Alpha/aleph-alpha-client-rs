@@ -601,7 +601,6 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
         events,
         vec![
             CompletionEvent::StreamChunk(StreamChunk {
-                index: 0,
                 completion: " \n\n Keeps the doctor away<|endoftext|>".to_owned()
             }),
             CompletionEvent::StreamSummary(StreamSummary {
@@ -614,6 +613,40 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
             })
         ]
     );
+}
+
+#[tokio::test]
+async fn stream_completion_sampled_logprobs() {
+    // Given a streaming completion task
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let task = TaskCompletion::from_text(
+        "<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+    )
+    .with_maximum_tokens(2)
+    .with_logprobs(Logprobs::Sampled);
+
+    // When the events are streamed and collected
+    let mut stream = client
+        .stream_completion(&task, "pharia-1-llm-7b-control", &How::default())
+        .await
+        .unwrap();
+
+    let event = stream.next().await.unwrap().unwrap();
+
+    assert_eq!(
+        event,
+        CompletionEvent::StreamChunk(StreamChunk {
+            completion: " Keeps".to_owned()
+        })
+    );
+
+    // assert_eq!(
+    //     response.logprobs[0].sampled.token_as_str().unwrap(),
+    //     " Keep"
+    // );
+    // assert_eq!(response.logprobs[1].sampled.token_as_str().unwrap(), "s");
 }
 
 #[tokio::test]

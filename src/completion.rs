@@ -338,9 +338,6 @@ fn completion_logprobs_to_canonical(
 /// Describes a chunk of a completion stream
 #[derive(Deserialize)]
 pub struct DeserializedStreamChunk {
-    /// The index of the stream that this chunk belongs to.
-    /// This is relevant if multiple completion streams are requested (see parameter n).
-    pub index: u32,
     /// The completion of the stream.
     pub completion: String,
     /// Completion with special tokens still included
@@ -350,9 +347,6 @@ pub struct DeserializedStreamChunk {
 /// Describes a chunk of a completion stream
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct StreamChunk {
-    /// The index of the stream that this chunk belongs to.
-    /// This is relevant if multiple completion streams are requested (see parameter n).
-    pub index: u32,
     /// The completion of the stream.
     pub completion: String,
 }
@@ -417,11 +411,9 @@ impl StreamTask for TaskCompletion<'_> {
     fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
         match response {
             DeserializedCompletionEvent::StreamChunk(DeserializedStreamChunk {
-                index,
                 completion,
                 raw_completion,
             }) => CompletionEvent::StreamChunk(StreamChunk {
-                index,
                 completion: if self.special_tokens {
                     raw_completion.expect("Missing raw completion")
                 } else {

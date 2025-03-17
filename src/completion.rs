@@ -367,17 +367,17 @@ pub enum DeserializedCompletionEvent {
 
 #[derive(Debug, PartialEq)]
 pub enum CompletionEvent {
-    StreamChunk {
+    Delta {
         /// The completion of the stream.
         completion: String,
         /// Log probabilities of the completion tokens if requested via logprobs parameter in request.
         logprobs: Vec<Distribution>,
     },
-    StreamSummary {
+    Finished {
         /// The reason why the model stopped generating new tokens.
-        finish_reason: String,
+        reason: String,
     },
-    CompletionSummary {
+    Summary {
         usage: Usage,
     },
 }
@@ -404,7 +404,7 @@ impl StreamTask for TaskCompletion<'_> {
                 raw_completion,
                 log_probs,
                 completion_tokens,
-            } => CompletionEvent::StreamChunk {
+            } => CompletionEvent::Delta {
                 completion: if self.special_tokens {
                     raw_completion.expect("Missing raw completion")
                 } else {
@@ -417,12 +417,14 @@ impl StreamTask for TaskCompletion<'_> {
                 ),
             },
             DeserializedCompletionEvent::StreamSummary { finish_reason } => {
-                CompletionEvent::StreamSummary { finish_reason }
+                CompletionEvent::Finished {
+                    reason: finish_reason,
+                }
             }
             DeserializedCompletionEvent::CompletionSummary {
                 num_tokens_prompt_total,
                 num_tokens_generated,
-            } => CompletionEvent::CompletionSummary {
+            } => CompletionEvent::Summary {
                 usage: Usage {
                     prompt_tokens: num_tokens_prompt_total,
                     completion_tokens: num_tokens_generated,

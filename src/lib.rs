@@ -216,7 +216,7 @@ impl Client {
     ///     // Retrieve stream from API
     ///     let mut stream = client.stream_completion(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = stream.next().await {
-    ///         if let CompletionEvent::StreamChunk { completion, logprobs: _ } = event {
+    ///         if let CompletionEvent::Delta { completion, logprobs: _ } = event {
     ///             println!("{}", completion);
     ///         }
     ///     }

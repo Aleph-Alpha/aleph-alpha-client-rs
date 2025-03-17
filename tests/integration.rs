@@ -560,15 +560,15 @@ async fn stream_completion() {
     assert!(events.len() >= 3);
     assert!(matches!(
         events[events.len() - 3],
-        CompletionEvent::StreamChunk { .. }
+        CompletionEvent::Delta { .. }
     ));
     assert!(matches!(
         events[events.len() - 2],
-        CompletionEvent::StreamSummary { .. }
+        CompletionEvent::Finished { .. }
     ));
     assert!(matches!(
         events[events.len() - 1],
-        CompletionEvent::CompletionSummary { .. }
+        CompletionEvent::Summary { .. }
     ));
 }
 
@@ -599,14 +599,14 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
     assert_eq!(
         events,
         vec![
-            CompletionEvent::StreamChunk {
+            CompletionEvent::Delta {
                 completion: " \n\n Keeps the doctor away<|endoftext|>".to_owned(),
                 logprobs: vec![]
             },
-            CompletionEvent::StreamSummary {
-                finish_reason: "end_of_text".to_owned()
+            CompletionEvent::Finished {
+                reason: "end_of_text".to_owned()
             },
-            CompletionEvent::CompletionSummary {
+            CompletionEvent::Summary {
                 usage: Usage {
                     prompt_tokens: 16,
                     completion_tokens: 9,
@@ -636,7 +636,7 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
 
     let event = stream.next().await.unwrap().unwrap();
 
-    let CompletionEvent::StreamChunk { logprobs, .. } = event else {
+    let CompletionEvent::Delta { logprobs, .. } = event else {
         panic!("Unexpected event type");
     };
 

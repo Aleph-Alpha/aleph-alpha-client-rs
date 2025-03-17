@@ -342,13 +342,19 @@ pub struct DeserializedStreamChunk {
     pub completion: String,
     /// Completion with special tokens still included
     pub raw_completion: Option<String>,
+    #[serde(default)]
+    log_probs: Vec<HashMap<String, f64>>,
+    #[serde(default)]
+    completion_tokens: Vec<String>,
 }
 
 /// Describes a chunk of a completion stream
-#[derive(Deserialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub struct StreamChunk {
     /// The completion of the stream.
     pub completion: String,
+    /// Log probabilities of the completion tokens if requested via logprobs parameter in request.
+    pub logprobs: Vec<Distribution>,
 }
 
 /// Denotes the end of a completion stream.
@@ -386,7 +392,7 @@ pub enum DeserializedCompletionEvent {
     CompletionSummary(CompletionSummary),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum CompletionEvent {
     StreamChunk(StreamChunk),
     StreamSummary(StreamSummary),
@@ -413,12 +419,19 @@ impl StreamTask for TaskCompletion<'_> {
             DeserializedCompletionEvent::StreamChunk(DeserializedStreamChunk {
                 completion,
                 raw_completion,
+                log_probs,
+                completion_tokens,
             }) => CompletionEvent::StreamChunk(StreamChunk {
                 completion: if self.special_tokens {
                     raw_completion.expect("Missing raw completion")
                 } else {
                     completion
                 },
+                logprobs: completion_logprobs_to_canonical(
+                    log_probs,
+                    completion_tokens,
+                    self.logprobs.top_logprobs().unwrap_or_default(),
+                ),
             }),
             DeserializedCompletionEvent::StreamSummary(summary) => {
                 CompletionEvent::StreamSummary(summary)

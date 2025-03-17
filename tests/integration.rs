@@ -601,7 +601,8 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
         events,
         vec![
             CompletionEvent::StreamChunk(StreamChunk {
-                completion: " \n\n Keeps the doctor away<|endoftext|>".to_owned()
+                completion: " \n\n Keeps the doctor away<|endoftext|>".to_owned(),
+                logprobs: vec![]
             }),
             CompletionEvent::StreamSummary(StreamSummary {
                 model_version: ".unknown.".to_owned(),
@@ -635,18 +636,12 @@ An apple a day<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
 
     let event = stream.next().await.unwrap().unwrap();
 
-    assert_eq!(
-        event,
-        CompletionEvent::StreamChunk(StreamChunk {
-            completion: " Keeps".to_owned()
-        })
-    );
+    let CompletionEvent::StreamChunk(chunk) = event else {
+        panic!("Unexpected event type");
+    };
 
-    // assert_eq!(
-    //     response.logprobs[0].sampled.token_as_str().unwrap(),
-    //     " Keep"
-    // );
-    // assert_eq!(response.logprobs[1].sampled.token_as_str().unwrap(), "s");
+    assert_eq!(chunk.logprobs[0].sampled.token_as_str().unwrap(), " Keep");
+    assert_eq!(chunk.logprobs[1].sampled.token_as_str().unwrap(), "s");
 }
 
 #[tokio::test]

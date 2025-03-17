@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.23.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.22.0...aleph-alpha-client-v0.23.0) (2025-03-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* provide message start with role
+
+### Features
+
+* provide message start with role ([1311dfd](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/1311dfd872d76f4fa845e4b62addacb1998a1d3e))
+
 ## [0.22.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.21.0...aleph-alpha-client-v0.22.0) (2025-03-17)
 
 

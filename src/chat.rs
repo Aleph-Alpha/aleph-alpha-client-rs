@@ -360,7 +360,7 @@ impl StreamTask for TaskChat<'_> {
         client.post(format!("{base}/chat/completions")).json(&body)
     }
 
-    fn body_to_output(mut response: Self::ResponseBody) -> Self::Output {
+    fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
         if let Some(usage) = response.usage {
             StreamChatEvent::Usage(usage)
         } else {

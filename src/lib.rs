@@ -14,7 +14,7 @@
 //!
 //!     // The task we want to perform. Here we want to continue the sentence: "An apple a day ..."
 //!     let task = TaskCompletion::from_text("An apple a day");
-//!     
+//!
 //!     // Retrieve the answer from the API
 //!     let response = client.completion(&task, model, &How::default()).await.unwrap();
 //!
@@ -229,14 +229,15 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn stream_completion(
+    pub async fn stream_completion<'task>(
         &self,
-        task: &TaskCompletion<'_>,
-        model: &str,
+        task: &'task TaskCompletion<'task>,
+        model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<CompletionEvent, Error>> + Send>>, Error> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<CompletionEvent, Error>> + Send + 'task>>, Error>
+    {
         self.http_client
-            .stream_output_of(&Task::with_model(task, model), how)
+            .stream_output_of(StreamTask::with_model(task, model), how)
             .await
     }
 
@@ -300,14 +301,15 @@ impl Client {
     ///     Ok(())
     /// }
     /// ```
-    pub async fn stream_chat(
+    pub async fn stream_chat<'task>(
         &self,
-        task: &TaskChat<'_>,
-        model: &str,
+        task: &'task TaskChat<'_>,
+        model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamChatEvent, Error>> + Send>>, Error> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamChatEvent, Error>> + Send + 'task>>, Error>
+    {
         self.http_client
-            .stream_output_of(&StreamTask::with_model(task, model), how)
+            .stream_output_of(StreamTask::with_model(task, model), how)
             .await
     }
 
@@ -496,7 +498,7 @@ impl Default for How {
 ///     );
 ///     let query = Prompt::from_text("What is Pizza?");
 ///     let how = How::default();
-///     
+///
 ///     // When
 ///     let robot_embedding_task = TaskSemanticEmbedding {
 ///         prompt: robot_fact,
@@ -507,7 +509,7 @@ impl Default for How {
 ///         &robot_embedding_task,
 ///         &how,
 ///     ).await.unwrap().embedding;
-///     
+///
 ///     let pizza_embedding_task = TaskSemanticEmbedding {
 ///         prompt: pizza_fact,
 ///         representation: SemanticRepresentation::Document,
@@ -517,7 +519,7 @@ impl Default for How {
 ///         &pizza_embedding_task,
 ///         &how,
 ///     ).await.unwrap().embedding;
-///     
+///
 ///     let query_embedding_task = TaskSemanticEmbedding {
 ///         prompt: query,
 ///         representation: SemanticRepresentation::Query,
@@ -531,9 +533,9 @@ impl Default for How {
 ///     println!("similarity pizza: {similarity_pizza}");
 ///     let similarity_robot = cosine_similarity(&query_embedding, &robot_embedding);
 ///     println!("similarity robot: {similarity_robot}");
-///     
+///
 ///     // Then
-///     
+///
 ///     // The fact about pizza should be more relevant to the "What is Pizza?" question than a fact
 ///     // about robots.
 ///     assert!(similarity_pizza > similarity_robot);

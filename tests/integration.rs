@@ -660,10 +660,21 @@ async fn stream_chat_with_pharia_1_llm_7b() {
     let events = stream.collect::<Vec<_>>().await;
 
     // Then we receive three events, with the last one being a finished event
-    assert_eq!(events.len(), 3);
-    assert!(matches!(events[0], Ok(ChatEvent::Delta { .. })));
-    assert!(matches!(&events[1], Ok(ChatEvent::Finished { reason }) if reason == "stop"));
-    assert!(matches!(events[2], Ok(ChatEvent::Summary { .. })));
+    assert_eq!(events.len(), 4);
+    assert_eq!(
+        events[0].as_ref().unwrap(),
+        &ChatEvent::MessageStart {
+            role: "assistant".to_owned()
+        }
+    );
+    assert!(matches!(events[1], Ok(ChatEvent::MessageDelta { .. })));
+    assert_eq!(
+        events[2].as_ref().unwrap(),
+        &ChatEvent::MessageEnd {
+            stop_reason: "stop".to_owned()
+        }
+    );
+    assert!(matches!(events[3], Ok(ChatEvent::Summary { .. })));
 }
 
 #[tokio::test]
@@ -681,8 +692,11 @@ async fn stream_chat_with_logprobs() {
         .await
         .unwrap();
 
+    // Role
+    stream.next().await;
+    // Content
     let event = stream.next().await.unwrap().unwrap();
-    let ChatEvent::Delta { logprobs, .. } = event else {
+    let ChatEvent::MessageDelta { logprobs, .. } = event else {
         panic!("Unexpected event type")
     };
     assert_eq!(logprobs[0].sampled.token_as_str().unwrap(), " Keep");

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.22.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.21.0...aleph-alpha-client-v0.22.0) (2025-03-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* add streaming logprobs support to chat
+* inline stream event types
+
+### Features
+
+* add logprobs support to completion streaming ([5698f88](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/5698f8835fe9d5e0d3f14c88aa985c06d1facced))
+* add streaming logprobs support to chat ([f80b361](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/f80b3613603d76c41e76bf758bcde63f2cf86cd3))
+* inline stream event types ([e4d6c0a](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/e4d6c0a1965c64900aa210d20cbd2e585e9ea58b))
+* Remove index field from StreamChunk types ([c1d5c9b](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/c1d5c9b3ad4f1c0bd4ca05251f372023b2b1491b))
+
+
+### Bug Fixes
+
+* **streaming:** use raw completion token output when special_tokens is true ([c0cb712](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/c0cb71200fbc197aa62622076f040cf119d9786b))
+
 ## [0.21.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.20.1...aleph-alpha-client-v0.21.0) (2025-02-16)
 
 

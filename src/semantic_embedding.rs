@@ -105,7 +105,7 @@ pub struct TaskBatchSemanticEmbedding<'a> {
     /// The prompt (usually text) to be embedded.
     pub prompts: Vec<Prompt<'a>>,
     /// Semantic representation to embed the prompt with. This parameter is governed by the specific
-    /// usecase in mind.
+    /// use case in mind.
     pub representation: SemanticRepresentation,
     /// Default behaviour is to return the full embedding, but you can optionally request an
     /// embedding compressed to a smaller set of dimensions. A size of `128` is supported for every

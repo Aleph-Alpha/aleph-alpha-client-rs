@@ -8,7 +8,7 @@
 //!     // Authenticate against API. Fetches token.
 //!     let client = Client::from_env().unwrap();
 //!
-//!     // Name of the model we we want to use. Large models give usually better answer, but are also
+//!     // Name of the model we want to use. Large models give usually better answer, but are also
 //!     // more costly.
 //!     let model = "luminous-base";
 //!
@@ -103,7 +103,7 @@ impl Client {
     ///     // Authenticate against API. Fetches token.
     ///     let client = Client::from_env()?;
     ///
-    ///     // Name of the model we we want to use. Large models give usually better answer, but are
+    ///     // Name of the model we want to use. Large models give usually better answer, but are
     ///     // also slower and more costly.
     ///     let model = "luminous-base";
     ///
@@ -137,7 +137,7 @@ impl Client {
     }
 
     /// An embedding trying to capture the semantic meaning of a text. Cosine similarity can be used
-    /// find out how well two texts (or multimodal prompts) match. Useful for search usecases.
+    /// find out how well two texts (or multimodal prompts) match. Useful for search use cases.
     ///
     /// See the example for [`cosine_similarity`].
     pub async fn semantic_embedding(
@@ -148,7 +148,7 @@ impl Client {
         self.http_client.output_of(task, how).await
     }
 
-    /// An batch of embeddings trying to capture the semantic meaning of a text.
+    /// A batch of embeddings trying to capture the semantic meaning of a text.
     pub async fn batch_semantic_embedding(
         &self,
         task: &TaskBatchSemanticEmbedding<'_>,

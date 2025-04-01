@@ -434,7 +434,7 @@ async fn describe_image_starting_from_a_dyn_image() {
 }
 
 #[tokio::test]
-async fn batch_semanitc_embed_with_luminous_base() {
+async fn batch_semantic_embed_with_luminous_base() {
     // Given
     let robot_fact = Prompt::from_text(
         "A robot is a machine—especially one programmable by a computer—capable of carrying out a \

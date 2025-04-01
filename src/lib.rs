@@ -241,7 +241,7 @@ impl Client {
         task: &'task TaskCompletion<'task>,
         model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item=Result<CompletionEvent, Error>> + Send + 'task>>, Error>
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<CompletionEvent, Error>> + Send + 'task>>, Error>
     {
         self.http_client
             .stream_output_of(StreamTask::with_model(task, model), how)
@@ -313,7 +313,7 @@ impl Client {
         task: &'task TaskChat<'_>,
         model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item=Result<ChatEvent, Error>> + Send + 'task>>, Error> {
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<ChatEvent, Error>> + Send + 'task>>, Error> {
         self.http_client
             .stream_output_of(StreamTask::with_model(task, model), how)
             .await

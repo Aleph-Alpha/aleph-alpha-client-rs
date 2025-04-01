@@ -55,6 +55,7 @@ pub use self::{
     prompt::{Modality, Prompt},
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
+        TaskSemanticEmbeddingWithInstruction,
     },
     stream::{StreamJob, StreamTask},
     tokenization::{TaskTokenization, TokenizationOutput},
@@ -157,6 +158,18 @@ impl Client {
         self.http_client.output_of(task, how).await
     }
 
+    /// An embedding trying to capture the semantic meaning of a text.
+    ///
+    /// By providing instructions, you can help the model better understand the nuances of your
+    /// specific data, leading to embeddings that are more useful for your use case.
+    pub async fn semantic_embedding_with_instruction(
+        &self,
+        task: &TaskSemanticEmbeddingWithInstruction<'_>,
+        how: &How,
+    ) -> Result<SemanticEmbeddingOutput, Error> {
+        self.http_client.output_of(task, how).await
+    }
+
     /// Instruct a model served by the aleph alpha API to continue writing a piece of text (or
     /// multimodal document).
     ///
@@ -228,7 +241,7 @@ impl Client {
         task: &'task TaskCompletion<'task>,
         model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<CompletionEvent, Error>> + Send + 'task>>, Error>
+    ) -> Result<Pin<Box<dyn Stream<Item=Result<CompletionEvent, Error>> + Send + 'task>>, Error>
     {
         self.http_client
             .stream_output_of(StreamTask::with_model(task, model), how)
@@ -300,7 +313,7 @@ impl Client {
         task: &'task TaskChat<'_>,
         model: &'task str,
         how: &How,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<ChatEvent, Error>> + Send + 'task>>, Error> {
+    ) -> Result<Pin<Box<dyn Stream<Item=Result<ChatEvent, Error>> + Send + 'task>>, Error> {
         self.http_client
             .stream_output_of(StreamTask::with_model(task, model), how)
             .await

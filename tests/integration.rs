@@ -4,7 +4,8 @@ use aleph_alpha_client::{
     cosine_similarity, ChatEvent, ChatSampling, Client, CompletionEvent, Granularity, How,
     ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
     SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
-    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding, TaskTokenization, TextScore, Usage,
+    TaskDetokenization, TaskExplanation, TaskSemanticEmbedding,
+    TaskSemanticEmbeddingWithInstruction, TaskTokenization, TextScore, Usage,
 };
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -466,6 +467,69 @@ async fn batch_semantic_embed_with_luminous_base() {
     // Then
     // There should be 2 embeddings
     assert_eq!(embeddings.len(), 2);
+}
+
+#[tokio::test]
+async fn semantic_embed_with_instruction_with_luminous_base() {
+    // Given
+    let robot_fact = Prompt::from_text(
+        "A robot is a machine—especially one programmable by a computer—capable of carrying out a \
+        complex series of actions automatically.",
+    );
+    let pizza_fact = Prompt::from_text(
+        "Pizza (Italian: [ˈpittsa], Neapolitan: [ˈpittsə]) is a dish of Italian origin consisting \
+        of a usually round, flat base of leavened wheat-based dough topped with tomatoes, cheese, \
+        and often various other ingredients (such as various types of sausage, anchovies, \
+        mushrooms, onions, olives, vegetables, meat, ham, etc.), which is then baked at a high \
+        temperature, traditionally in a wood-fired oven.",
+    );
+    let query = Prompt::from_text("What is Pizza?");
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+
+    // When
+    let robot_embedding_task = TaskSemanticEmbeddingWithInstruction {
+        instruction: "Embed this fact",
+        prompt: robot_fact,
+        normalize: None,
+    };
+    let robot_embedding = client
+        .semantic_embedding_with_instruction(&robot_embedding_task, &How::default())
+        .await
+        .unwrap()
+        .embedding;
+
+    let pizza_embedding_task = TaskSemanticEmbeddingWithInstruction {
+        instruction: "Embed this fact",
+        prompt: pizza_fact,
+        normalize: None,
+    };
+    let pizza_embedding = client
+        .semantic_embedding_with_instruction(&pizza_embedding_task, &How::default())
+        .await
+        .unwrap()
+        .embedding;
+
+    let query_embedding_task = TaskSemanticEmbeddingWithInstruction {
+        instruction: "Embed this question about facts",
+        prompt: query,
+        normalize: None,
+    };
+    let query_embedding = client
+        .semantic_embedding_with_instruction(&query_embedding_task, &How::default())
+        .await
+        .unwrap()
+        .embedding;
+
+    let similarity_pizza = cosine_similarity(&query_embedding, &pizza_embedding);
+    println!("similarity pizza: {similarity_pizza}");
+    let similarity_robot = cosine_similarity(&query_embedding, &robot_embedding);
+    println!("similarity robot: {similarity_robot}");
+
+    // Then
+
+    // The fact about pizza should be more relevant to the "What is Pizza?" question than a fact
+    // about robots.
+    assert!(similarity_pizza > similarity_robot);
 }
 
 #[tokio::test]

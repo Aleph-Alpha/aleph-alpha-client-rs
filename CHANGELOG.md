@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.23.0...aleph-alpha-client-v0.23.1) (2025-04-02)
+
+
+### Features
+
+* add instructable embedding ([#65](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/issues/65)) ([9236322](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/9236322831d2bd71daaaf9a6ab6c9bc0beb41556))
+
 ## [0.23.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.22.0...aleph-alpha-client-v0.23.0) (2025-03-17)
 
 

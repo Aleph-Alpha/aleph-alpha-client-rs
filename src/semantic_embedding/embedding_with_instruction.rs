@@ -6,7 +6,7 @@ use crate::{
 };
 use serde::Serialize;
 
-const ENDPOINT: &str = "/instructable_embed";
+const ENDPOINT: &str = "instructable_embed";
 
 /// Allows you to choose a semantic representation fitting for your use case.
 ///

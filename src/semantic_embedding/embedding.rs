@@ -2,7 +2,7 @@ use crate::semantic_embedding::{RequestBody, DEFAULT_EMBEDDING_MODEL};
 use crate::{Job, Prompt, SemanticRepresentation, Task};
 use serde::{Deserialize, Serialize};
 
-const ENDPOINT: &str = "/semantic_embed";
+const ENDPOINT: &str = "semantic_embed";
 
 /// Create embeddings for prompts which can be used for downstream tasks. E.g. search, classifiers
 #[derive(Serialize, Debug)]

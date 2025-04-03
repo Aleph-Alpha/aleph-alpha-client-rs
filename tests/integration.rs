@@ -1023,3 +1023,25 @@ async fn show_token_usage_completion() {
     assert_eq!(response.usage.prompt_tokens, 5);
     assert_eq!(response.usage.completion_tokens, 3);
 }
+
+#[tokio::test]
+async fn retrieve_model_settings() {
+    // Given
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+
+    // When
+    let settings = client
+        .model_settings(None)
+        .await
+        .expect("Unable to retrieve model settings");
+
+    // Then
+
+    // Assert that we were able to deserialize the response and have retrieved the settings for the
+    // luminous-base model.
+    let luminous_base = settings.iter().find(|s| s.name == "luminous-base");
+    assert!(
+        luminous_base.is_some(),
+        "Didn't receive model settings for luminous base: {settings:?}"
+    );
+}

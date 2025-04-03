@@ -30,6 +30,7 @@ mod explanation;
 mod http;
 mod image_preprocessing;
 mod logprobs;
+mod model;
 mod prompt;
 mod semantic_embedding;
 mod stream;
@@ -52,6 +53,7 @@ pub use self::{
     },
     http::{Error, Job, Task},
     logprobs::{Logprob, Logprobs},
+    model::{CompletionType, EmbeddingType, ModelSettings, ModelStatus, WorkerType},
     prompt::{Modality, Prompt},
     semantic_embedding::{
         SemanticRepresentation, TaskBatchSemanticEmbedding, TaskSemanticEmbedding,
@@ -444,6 +446,19 @@ impl Client {
         api_token: Option<String>,
     ) -> Result<Tokenizer, Error> {
         self.http_client.tokenizer_by_model(model, api_token).await
+    }
+
+    pub async fn model_settings(
+        &self,
+        api_token: Option<String>,
+    ) -> Result<Vec<ModelSettings>, Error> {
+        let model_settings = self
+            .http_client
+            .retrieve("/model-settings", api_token)
+            .await?
+            .json()
+            .await?;
+        Ok(model_settings)
     }
 }
 

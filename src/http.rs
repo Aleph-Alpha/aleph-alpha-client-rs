@@ -253,6 +253,28 @@ impl HttpClient {
         })?;
         Ok(tokenizer)
     }
+
+    pub async fn retrieve(
+        &self,
+        endpoint: &str,
+        api_token: Option<String>,
+    ) -> Result<Response, Error> {
+        let api_token = api_token
+            .as_ref()
+            .or(self.api_token.as_ref())
+            .expect("API token needs to be set on client construction or per request");
+        let response = self
+            .http
+            .get(format!(
+                "{}/{}",
+                self.base,
+                endpoint.trim_start_matches('/')
+            ))
+            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
+            .send()
+            .await?;
+        translate_http_error(response).await
+    }
 }
 
 async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Response, Error> {
@@ -336,6 +358,9 @@ pub enum Error {
         deserialization_error
     )]
     InvalidStream { deserialization_error: String },
+    /// The server response that has been retrieved is invalid and couldn't be parsed.
+    #[error(transparent)]
+    InvalidResponse(#[from] serde_json::Error),
     /// Most likely either TLS errors creating the Client, or IO errors.
     #[error(transparent)]
     Other(#[from] reqwest::Error),

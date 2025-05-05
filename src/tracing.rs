@@ -28,6 +28,16 @@ impl TraceContext {
         }
     }
 
+    /// Construct a new trace context with the `sampled` flag set to true.
+    pub fn new_sampled(trace_id: u128, span_id: u64) -> Self {
+        Self::new(trace_id, span_id, true)
+    }
+
+    /// Construct a new trace context with the `sampled` flag set to false.
+    pub fn new_unsampled(trace_id: u128, span_id: u64) -> Self {
+        Self::new(trace_id, span_id, false)
+    }
+
     /// The version of the trace context specification that we support.
     ///
     /// https://www.w3.org/TR/trace-context-2/#version
@@ -64,7 +74,7 @@ mod tests {
     fn trace_flags_if_sampled() {
         let trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736;
         let span_id = 0x00f067aa0ba902b7;
-        let trace_context = TraceContext::new(trace_id, span_id, true);
+        let trace_context = TraceContext::new_sampled(trace_id, span_id);
         assert_eq!(trace_context.trace_flags(), 0x01);
     }
 
@@ -72,7 +82,7 @@ mod tests {
     fn trace_flags_if_not_sampled() {
         let trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736;
         let span_id = 0x00f067aa0ba902b7;
-        let trace_context = TraceContext::new(trace_id, span_id, false);
+        let trace_context = TraceContext::new_unsampled(trace_id, span_id);
         assert_eq!(trace_context.trace_flags(), 0x00);
     }
 
@@ -80,7 +90,7 @@ mod tests {
     fn traceparent_generation_if_sampled() {
         let trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736;
         let span_id = 0x00f067aa0ba902b7;
-        let trace_context = TraceContext::new(trace_id, span_id, true);
+        let trace_context = TraceContext::new_sampled(trace_id, span_id);
         assert_eq!(
             trace_context.traceparent(),
             "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
@@ -91,7 +101,7 @@ mod tests {
     fn traceparent_generation_if_not_sampled() {
         let trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736;
         let span_id = 0x00f067aa0ba902b7;
-        let trace_context = TraceContext::new(trace_id, span_id, false);
+        let trace_context = TraceContext::new_unsampled(trace_id, span_id);
         assert_eq!(
             trace_context.traceparent(),
             "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00"

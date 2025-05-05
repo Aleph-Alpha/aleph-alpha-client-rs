@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.24.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.23.1...aleph-alpha-client-v0.24.0) (2025-05-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* support forwarding of trace context information
+
+### Features
+
+* add convenience methods to construct sampled/unsampled trace context ([d08baad](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/d08baad0ccb278e9cba79f8580aad69d3d4412b0))
+* support forwarding of trace context information ([daf4a44](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/daf4a44d735738eed935f4dfbd865aa33dc6ffae))
+
 ## [0.23.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.23.0...aleph-alpha-client-v0.23.1) (2025-04-02)
 
 

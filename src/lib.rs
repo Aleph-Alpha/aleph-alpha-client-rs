@@ -444,8 +444,11 @@ impl Client {
         &self,
         model: &str,
         api_token: Option<String>,
+        context: Option<TraceContext>,
     ) -> Result<Tokenizer, Error> {
-        self.http_client.tokenizer_by_model(model, api_token).await
+        self.http_client
+            .tokenizer_by_model(model, api_token, context)
+            .await
     }
 }
 

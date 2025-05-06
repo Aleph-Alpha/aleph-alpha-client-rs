@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.25.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.24.0...aleph-alpha-client-v0.25.0) (2025-05-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* take optional trace context for tokenizer request
+
+### Features
+
+* take optional trace context for tokenizer request ([df19ea8](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/df19ea8fedf32106bdce0e565447dd8c3ee32a88))
+
 ## [0.24.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.23.1...aleph-alpha-client-v0.24.0) (2025-05-05)
 
 

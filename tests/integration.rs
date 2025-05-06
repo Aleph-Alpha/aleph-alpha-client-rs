@@ -595,7 +595,7 @@ async fn fetch_tokenizer_for_pharia_1_llm_7b() {
 
     // When
     let tokenizer = client
-        .tokenizer_by_model("pharia-1-llm-7b-control", None)
+        .tokenizer_by_model("pharia-1-llm-7b-control", None, None)
         .await
         .unwrap();
 

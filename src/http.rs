@@ -6,7 +6,7 @@ use serde::Deserialize;
 use thiserror::Error as ThisError;
 use tokenizers::Tokenizer;
 
-use crate::{How, StreamJob};
+use crate::{How, StreamJob, TraceContext};
 use async_stream::stream;
 
 /// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
@@ -238,17 +238,22 @@ impl HttpClient {
         &self,
         model: &str,
         api_token: Option<String>,
+        context: Option<TraceContext>,
     ) -> Result<Tokenizer, Error> {
         let api_token = api_token
             .as_ref()
             .or(self.api_token.as_ref())
             .expect("API token needs to be set on client construction or per request");
-        let response = self
+        let mut builder = self
             .http
             .get(format!("{}/models/{model}/tokenizer", self.base))
-            .header(header::AUTHORIZATION, Self::header_from_token(api_token))
-            .send()
-            .await?;
+            .header(header::AUTHORIZATION, Self::header_from_token(api_token));
+
+        if let Some(trace_context) = &context {
+            builder = builder.header("traceparent", trace_context.traceparent());
+        }
+
+        let response = builder.send().await?;
         let response = translate_http_error(response).await?;
         let bytes = response.bytes().await?;
         let tokenizer = Tokenizer::from_bytes(bytes).map_err(|e| Error::InvalidTokenizer {

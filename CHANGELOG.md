@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.26.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.25.0...aleph-alpha-client-v0.26.0) (2025-05-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* trace context accepts trace state parameter
+
+### Features
+
+* trace context accepts trace state parameter ([3591837](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/3591837305df8f4b886eb4219674cf190e080dcf))
+
 ## [0.25.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.24.0...aleph-alpha-client-v0.25.0) (2025-05-06)
 
 

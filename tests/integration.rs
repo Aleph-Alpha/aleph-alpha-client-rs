@@ -1030,7 +1030,7 @@ async fn trace_context_is_propagated() {
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
     let trace_id = 0x4bf92f3577b34da6a3ce929d0e0e4736;
     let span_id = 0x00f067aa0ba902b7;
-    let trace_context = TraceContext::new_sampled(trace_id, span_id);
+    let trace_context = TraceContext::new_sampled(trace_id, span_id, None);
 
     // When the client is used to make a request
     let task = TaskCompletion::from_text("Hello, World!");

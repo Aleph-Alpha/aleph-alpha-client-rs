@@ -122,7 +122,9 @@ impl HttpClient {
             .timeout(how.client_timeout);
 
         if let Some(trace_context) = &how.trace_context {
-            builder = builder.header("traceparent", trace_context.traceparent());
+            for (key, value) in trace_context.as_w3c_headers() {
+                builder = builder.header(key, value);
+            }
         }
 
         let response = builder.send().await.map_err(|reqwest_error| {
@@ -250,7 +252,9 @@ impl HttpClient {
             .header(header::AUTHORIZATION, Self::header_from_token(api_token));
 
         if let Some(trace_context) = &context {
-            builder = builder.header("traceparent", trace_context.traceparent());
+            for (key, value) in trace_context.as_w3c_headers() {
+                builder = builder.header(key, value);
+            }
         }
 
         let response = builder.send().await?;

@@ -99,6 +99,7 @@ impl<'a> Modality<'a> {
     ///         sampling: Sampling::MOST_LIKELY,
     ///         special_tokens: false,
     ///         logprobs: Logprobs::No,
+    ///         echo: false,
     ///     };
     ///     // Execute
     ///     let model = "luminous-base";

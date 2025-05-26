@@ -224,6 +224,7 @@ async fn complete_structured_prompt() {
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
         logprobs: Logprobs::No,
+        echo: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -255,6 +256,7 @@ async fn maximum_tokens_none_request() {
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
         logprobs: Logprobs::No,
+        echo: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -266,6 +268,32 @@ async fn maximum_tokens_none_request() {
     // Then
     assert!(!response.completion.is_empty());
     assert_eq!(response.completion, " I am doing fine, how are you?\n");
+}
+
+#[tokio::test]
+async fn echo_prompt_request() {
+    // Given
+    let prompt = " An apple a day";
+    let stopping = Stopping::from_maximum_tokens(10);
+
+    // When
+    let task = TaskCompletion {
+        prompt: Prompt::from_text(prompt),
+        stopping,
+        sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
+        logprobs: Logprobs::No,
+        echo: true,
+    };
+    let model = "luminous-base";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert!(response.completion.starts_with(prompt));
 }
 
 #[tokio::test]
@@ -390,6 +418,7 @@ async fn describe_image_starting_from_a_path() {
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
         logprobs: Logprobs::No,
+        echo: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
@@ -421,6 +450,7 @@ async fn describe_image_starting_from_a_dyn_image() {
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
         logprobs: Logprobs::No,
+        echo: false,
     };
     let model = "luminous-base";
     let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();

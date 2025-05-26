@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.27.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.26.0...aleph-alpha-client-v0.27.0) (2025-05-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* support echo parameter of inference
+
+### Features
+
+* support echo parameter of inference ([6a7fcd0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/6a7fcd0c4c1b6a1c377e0504420a7101f82e88fa))
+
 ## [0.26.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.25.0...aleph-alpha-client-v0.26.0) (2025-05-12)
 
 

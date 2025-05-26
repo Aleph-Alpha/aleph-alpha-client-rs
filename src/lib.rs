@@ -345,6 +345,7 @@ impl Client {
     ///         sampling: Sampling::MOST_LIKELY,
     ///         special_tokens: false,
     ///         logprobs: Logprobs::No,
+    ///         echo: false,
     ///     };
     ///     let response = client.completion(&task, model, &How::default()).await?;
     ///

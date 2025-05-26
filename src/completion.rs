@@ -18,6 +18,9 @@ pub struct TaskCompletion<'a> {
     /// Wether you are interessted in the probabilities of the sampled tokens, or most likely
     /// tokens.
     pub logprobs: Logprobs,
+    /// Echo the prompt in the completion. This may be especially helpful when log_probs is set
+    /// to return logprobs for the prompt.
+    pub echo: bool,
 }
 
 impl<'a> TaskCompletion<'a> {
@@ -29,6 +32,7 @@ impl<'a> TaskCompletion<'a> {
             sampling: Sampling::MOST_LIKELY,
             special_tokens: false,
             logprobs: Logprobs::No,
+            echo: false,
         }
     }
 
@@ -50,6 +54,11 @@ impl<'a> TaskCompletion<'a> {
 
     pub fn with_logprobs(mut self, logprobs: Logprobs) -> Self {
         self.logprobs = logprobs;
+        self
+    }
+
+    pub fn with_echo(mut self) -> Self {
+        self.echo = true;
         self
     }
 }
@@ -194,6 +203,8 @@ struct BodyCompletion<'a> {
     pub log_probs: Option<u8>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub tokens: bool,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub echo: bool,
 }
 
 impl<'a> BodyCompletion<'a> {
@@ -204,6 +215,7 @@ impl<'a> BodyCompletion<'a> {
             sampling,
             special_tokens,
             logprobs,
+            echo,
         } = task;
         Self {
             model,
@@ -219,6 +231,7 @@ impl<'a> BodyCompletion<'a> {
             presence_penalty: sampling.presence_penalty,
             log_probs: logprobs.to_logprobs_num(),
             tokens: logprobs.to_tokens(),
+            echo: *echo,
         }
     }
     pub fn with_streaming(mut self) -> Self {

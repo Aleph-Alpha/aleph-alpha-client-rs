@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.27.0...aleph-alpha-client-v0.27.1) (2025-06-10)
+
+
+### Bug Fixes
+
+* allow empty logprobs in completion response ([08d18db](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/08d18dbbb4fac4d1a3f112493ff686222ef6b98b))
+
 ## [0.27.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.26.0...aleph-alpha-client-v0.27.0) (2025-05-26)
 
 

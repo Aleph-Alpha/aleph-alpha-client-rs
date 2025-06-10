@@ -320,6 +320,7 @@ fn completion_logprobs_to_canonical(
 ) -> Vec<Distribution> {
     let mut logprobs = Vec::new();
     for (token, map) in completion_tokens.into_iter().zip(log_probs) {
+        // The NAN case can occur if `echo` is set to true, as there are no logprobs returned for the first token.
         let logprob = *map.get(&token).unwrap_or(&f64::NAN);
         let mut top_logprobs = map
             .into_iter()
@@ -334,9 +335,12 @@ fn completion_logprobs_to_canonical(
         // elements. Since we translate into a representation with the sampled token separate, we
         // can keep the top n elements constant. In case the sampled token has not been in the top
         // n, the below line will shorten the array by one.
-        top_logprobs.resize_with(num_expected_top_logprobs as usize, || {
-            unreachable!("Vec should only shorten")
-        });
+        // For the special case of `echo` being set to true, we will receive an empty list of top
+        // logprobs for the first token.
+        top_logprobs = top_logprobs
+            .into_iter()
+            .take(num_expected_top_logprobs as usize)
+            .collect();
         logprobs.push(Distribution {
             sampled: Logprob {
                 token: token.into_bytes(),

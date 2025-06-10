@@ -299,8 +299,8 @@ async fn echo_prompt_request_without_logprobs() {
 #[tokio::test]
 async fn echo_prompt_request_with_logprobs() {
     // Given
-    let prompt = " An apple a day";
-    let stopping = Stopping::from_maximum_tokens(10);
+    let prompt = "apple";
+    let stopping = Stopping::from_maximum_tokens(1);
 
     // When
     let task = TaskCompletion {
@@ -308,7 +308,7 @@ async fn echo_prompt_request_with_logprobs() {
         stopping,
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
-        logprobs: Logprobs::Top(10),
+        logprobs: Logprobs::Top(3),
         echo: true,
     };
     let model = "luminous-base";
@@ -318,8 +318,10 @@ async fn echo_prompt_request_with_logprobs() {
         .await
         .unwrap();
 
-    // Then
-    assert!(response.completion.starts_with(prompt));
+    // Then we do not get logprobs for the first token, but for the second one
+    assert_eq!(response.logprobs.len(), 2);
+    assert_eq!(response.logprobs[0].top.len(), 0);
+    assert_eq!(response.logprobs[1].top.len(), 3);
 }
 
 #[tokio::test]

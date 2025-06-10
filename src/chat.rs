@@ -178,6 +178,8 @@ pub struct Distribution {
     #[serde(flatten)]
     pub sampled: Logprob,
     // Logarithmic probabilities of the most probable tokens, filled if user has requested [`crate::Logprobs::Top`]
+    // The length of this array is always equal to the value of the `top_logprobs` parameter.
+    // For the special case of echo being set to true, it will include an empty element for the first token.
     #[serde(rename = "top_logprobs")]
     pub top: Vec<Logprob>,
 }

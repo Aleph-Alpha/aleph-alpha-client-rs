@@ -271,7 +271,7 @@ async fn maximum_tokens_none_request() {
 }
 
 #[tokio::test]
-async fn echo_prompt_request() {
+async fn echo_prompt_request_without_logprobs() {
     // Given
     let prompt = " An apple a day";
     let stopping = Stopping::from_maximum_tokens(10);
@@ -283,6 +283,32 @@ async fn echo_prompt_request() {
         sampling: Sampling::MOST_LIKELY,
         special_tokens: false,
         logprobs: Logprobs::No,
+        echo: true,
+    };
+    let model = "luminous-base";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then
+    assert!(response.completion.starts_with(prompt));
+}
+
+#[tokio::test]
+async fn echo_prompt_request_with_logprobs() {
+    // Given
+    let prompt = " An apple a day";
+    let stopping = Stopping::from_maximum_tokens(10);
+
+    // When
+    let task = TaskCompletion {
+        prompt: Prompt::from_text(prompt),
+        stopping,
+        sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
+        logprobs: Logprobs::Top(10),
         echo: true,
     };
     let model = "luminous-base";

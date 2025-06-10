@@ -297,6 +297,42 @@ async fn echo_prompt_request_without_logprobs() {
 }
 
 #[tokio::test]
+async fn echo_prompt_request_with_sampled_logprobs() {
+    // Given
+    let prompt = "apple";
+    let stopping = Stopping::from_maximum_tokens(1);
+
+    // When requesting a completion with sampled logprobs
+    let task = TaskCompletion {
+        prompt: Prompt::from_text(prompt),
+        stopping,
+        sampling: Sampling::MOST_LIKELY,
+        special_tokens: false,
+        logprobs: Logprobs::Sampled,
+        echo: true,
+    };
+    let model = "pharia-1-llm-7b-control";
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let response = client
+        .output_of(&task.with_model(model), &How::default())
+        .await
+        .unwrap();
+
+    // Then all the top logprobs are empty
+    assert_eq!(response.logprobs.len(), 3);
+    assert_eq!(response.logprobs[0].top.len(), 0);
+    assert_eq!(response.logprobs[1].top.len(), 0);
+    assert_eq!(response.logprobs[2].top.len(), 0);
+
+    // And the logprob for only the first token is NAN
+    assert!(response.logprobs[0].sampled.logprob.is_nan());
+
+    // And the logprob for the second and third token are not NAN
+    assert!(!response.logprobs[1].sampled.logprob.is_nan());
+    assert!(!response.logprobs[2].sampled.logprob.is_nan());
+}
+
+#[tokio::test]
 async fn echo_prompt_request_with_logprobs() {
     // Given
     let prompt = "apple";

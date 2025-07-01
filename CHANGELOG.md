@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.28.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.27.1...aleph-alpha-client-v0.28.0) (2025-07-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* add model not found error
+
+### Features
+
+* add model not found error ([b90f025](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/b90f02501699d33a49eebb17d21810bfa72a5ecb))
+
 ## [0.27.1](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.27.0...aleph-alpha-client-v0.27.1) (2025-06-10)
 
 

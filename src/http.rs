@@ -312,6 +312,12 @@ struct ApiError<'a> {
 /// Errors returned by the Aleph Alpha Client
 #[derive(ThisError, Debug)]
 pub enum Error {
+    #[error(
+        "The model {0} was not found. Please check the model name provided. You can query the list \
+        of available models at the `models` endpoint. If you believe the model should be available, \
+        contact the operator of your inference server."
+    )]
+    ModelNotFound(String),
     /// User exceeds his current Task Quota.
     #[error(
         "You are trying to send too many requests to the API in to short an interval. Slow down a \

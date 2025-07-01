@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader};
 
 use aleph_alpha_client::{
-    cosine_similarity, ChatEvent, ChatSampling, Client, CompletionEvent, Granularity, How,
+    cosine_similarity, ChatEvent, ChatSampling, Client, CompletionEvent, Error, Granularity, How,
     ImageScore, ItemExplanation, Logprobs, Message, Modality, Prompt, PromptGranularity, Sampling,
     SemanticRepresentation, Stopping, Task, TaskBatchSemanticEmbedding, TaskChat, TaskCompletion,
     TaskDetokenization, TaskExplanation, TaskSemanticEmbedding,
@@ -1144,4 +1144,20 @@ async fn trace_context_is_propagated() {
 
     // Then the response is non-empty
     assert!(!response.completion.is_empty());
+}
+
+#[tokio::test]
+async fn unknown_model_gives_model_not_found_error() {
+    // Given
+    let client = Client::with_auth(inference_url(), pharia_ai_token()).unwrap();
+    let task = TaskCompletion::from_text("Hello, World!");
+
+    // When
+    let result = client
+        .completion(&task, "pharia-9", &How::default())
+        .await
+        .unwrap_err();
+
+    // Then we get a model not found error
+    assert!(matches!(result, Error::ModelNotFound(_)));
 }

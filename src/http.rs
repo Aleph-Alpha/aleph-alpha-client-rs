@@ -278,6 +278,16 @@ async fn translate_http_error(response: reqwest::Response) -> Result<reqwest::Re
         let api_error: Result<ApiError, _> = serde_json::from_str(&body);
         let translated_error = match status {
             StatusCode::TOO_MANY_REQUESTS => Error::TooManyRequests,
+            StatusCode::NOT_FOUND => {
+                if api_error.is_ok_and(|error| error.code == "UNKNOWN_MODEL") {
+                    Error::ModelNotFound
+                } else {
+                    Error::Http {
+                        status: status.as_u16(),
+                        body,
+                    }
+                }
+            }
             StatusCode::SERVICE_UNAVAILABLE => {
                 // Presence of `api_error` implies the error originated from the API itself (rather
                 // than the intermediate proxy) and so we can decode it as such.
@@ -313,11 +323,11 @@ struct ApiError<'a> {
 #[derive(ThisError, Debug)]
 pub enum Error {
     #[error(
-        "The model {0} was not found. Please check the model name provided. You can query the list \
-        of available models at the `models` endpoint. If you believe the model should be available, \
-        contact the operator of your inference server."
+        "The model was not found. Please check the provided model name. You can query the list \
+        of available models at the `models` endpoint. If you believe the model should be
+        available, contact the operator of your inference server."
     )]
-    ModelNotFound(String),
+    ModelNotFound,
     /// User exceeds his current Task Quota.
     #[error(
         "You are trying to send too many requests to the API in to short an interval. Slow down a \

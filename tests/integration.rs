@@ -1159,5 +1159,5 @@ async fn unknown_model_gives_model_not_found_error() {
         .unwrap_err();
 
     // Then we get a model not found error
-    assert!(matches!(result, Error::ModelNotFound(_)));
+    assert!(matches!(result, Error::ModelNotFound));
 }

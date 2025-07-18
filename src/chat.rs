@@ -385,9 +385,9 @@ impl StreamTask for TaskChat<'_> {
         client.post(format!("{base}/chat/completions")).json(&body)
     }
 
-    fn body_to_output(&self, mut response: Self::ResponseBody) -> Option<Self::Output> {
+    fn body_to_output(&self, mut response: Self::ResponseBody) -> Self::Output {
         if let Some(usage) = response.usage {
-            Some(ChatEvent::Summary { usage })
+            ChatEvent::Summary { usage }
         } else {
             // We always expect there to be exactly one choice, as the `n` parameter is not
             // supported by this crate.
@@ -404,7 +404,7 @@ impl StreamTask for TaskChat<'_> {
                             role: Some(role), ..
                         },
                     ..
-                } => Some(ChatEvent::MessageStart { role }),
+                } => ChatEvent::MessageStart { role },
                 DeserializedChatChunk::Delta {
                     delta:
                         StreamMessage {
@@ -412,13 +412,13 @@ impl StreamTask for TaskChat<'_> {
                             content,
                         },
                     logprobs,
-                } => Some(ChatEvent::MessageDelta {
+                } => ChatEvent::MessageDelta {
                     content,
                     logprobs: logprobs.unwrap_or_default().content,
-                }),
-                DeserializedChatChunk::Finished { finish_reason } => Some(ChatEvent::MessageEnd {
+                },
+                DeserializedChatChunk::Finished { finish_reason } => ChatEvent::MessageEnd {
                     stop_reason: finish_reason,
-                }),
+                },
             }
         }
     }

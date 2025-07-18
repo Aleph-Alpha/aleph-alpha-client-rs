@@ -1,12 +1,13 @@
 use std::{borrow::Cow, pin::Pin, time::Duration};
 
+use bytes::Bytes;
 use futures_util::{stream::StreamExt, Stream};
 use reqwest::{header, ClientBuilder, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 use tokenizers::Tokenizer;
 
-use crate::{How, StreamJob, TraceContext};
+use crate::{sse::SseStream, How, StreamJob, TraceContext};
 use async_stream::stream;
 
 /// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
@@ -170,6 +171,7 @@ impl HttpClient {
         Ok(answer)
     }
 
+    /// Execute a stream task with the aleph alpha API and stream its result.
     pub async fn stream_output_of<'task, T: StreamJob + Send + Sync + 'task>(
         &self,
         task: T,
@@ -180,24 +182,44 @@ impl HttpClient {
     {
         let builder = task.build_request(&self.http, &self.base);
         let response = self.response(builder, how).await?;
-        let mut stream = response.bytes_stream();
+        let stream = Box::pin(response.bytes_stream());
+        Self::parse_stream_output(stream, task).await
+    }
+
+    /// Parse a stream of bytes into a stream of [`StreamTask::Output`] objects.
+    ///
+    /// The [`StreamTask::body_to_output`] allows each implementation to decide how to handle
+    /// the response events.
+    pub async fn parse_stream_output<'task, T: StreamJob + Send + Sync + 'task>(
+        stream: Pin<Box<dyn Stream<Item = reqwest::Result<Bytes>> + Send>>,
+        task: T,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<T::Output, Error>> + Send + 'task>>, Error>
+    where
+        T::Output: 'static,
+    {
+        let mut stream = SseStream::new(stream);
 
         Ok(Box::pin(stream! {
             while let Some(item) = stream.next().await {
                 match item {
-                    Ok(bytes) => {
-                        let events = Self::parse_stream_event::<T::ResponseBody>(bytes.as_ref());
-                        for event in events {
-                            match event {
-                                // Check if the output should be yielded or skipped
-                                Ok(b) => if let Some(output) = task.body_to_output(b) {
-                                    yield Ok(output);
-                                }
-                                Err(e) => {
-                                    yield Err(e);
-                                }
+                    Ok(data) => {
+                        // The last stream event for the chat endpoint (not for the completion endpoint) always is "[DONE]"
+                        // While we could model this as a variant of the `ChatStreamChunk` enum, the value of this is
+                        // unclear, so we ignore it here.
+                        if data.trim() == "[DONE]" {
+                            break;
+                        }
+                        let parsed = serde_json::from_str(&data).map_err(|e| Error::InvalidStream {
+                            deserialization_error: e.to_string(),
+                        });
+                        match parsed {
+                            // Check if the output should be yielded or skipped
+                            Ok(b) => if let Some(output) = task.body_to_output(b) {
+                                yield Ok(output);
                             }
-
+                            Err(e) => {
+                                yield Err(e);
+                            }
                         }
                     }
                     Err(e) => {
@@ -206,27 +228,6 @@ impl HttpClient {
                 }
             }
         }))
-    }
-
-    /// Take a byte slice (of a SSE) and parse it into a provided response body.
-    /// Each SSE event is expected to contain one or multiple JSON bodies prefixed by `data: `.
-    fn parse_stream_event<StreamBody>(bytes: &[u8]) -> Vec<Result<StreamBody, Error>>
-    where
-        StreamBody: for<'de> Deserialize<'de>,
-    {
-        String::from_utf8_lossy(bytes)
-            .split("data: ")
-            .skip(1)
-            // The last stream event for the chat endpoint (not for the completion endpoint) always is "[DONE]"
-            // While we could model this as a variant of the `ChatStreamChunk` enum, the value of this is
-            // unclear, so we ignore it here.
-            .filter(|s| s.trim() != "[DONE]")
-            .map(|s| {
-                serde_json::from_str(s).map_err(|e| Error::InvalidStream {
-                    deserialization_error: e.to_string(),
-                })
-            })
-            .collect()
     }
 
     fn header_from_token(api_token: &str) -> header::HeaderValue {
@@ -371,117 +372,136 @@ pub enum Error {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        chat::{DeserializedChatChunk, StreamChatResponse, StreamMessage},
-        completion::DeserializedCompletionEvent,
-    };
+    use crate::{ChatEvent, CompletionEvent, Message, TaskChat, TaskCompletion};
 
     use super::*;
 
-    #[test]
-    fn stream_chunk_event_is_parsed() {
-        // Given some bytes
-        let bytes = b"data: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\" The New York Times, May 15\"}\n\n";
+    #[tokio::test]
+    async fn stream_chunk_event_is_parsed() {
+        // Given a completion task and part of its response stream that includes a stream chunk
+        let task = TaskCompletion::from_text("An apple a day");
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\" The New York Times, May 15\"}\n\ndata: [DONE]";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
 
-        // When they are parsed
-        let events = HttpClient::parse_stream_event::<DeserializedCompletionEvent>(bytes);
-        let event = events.first().unwrap().as_ref().unwrap();
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
 
-        // Then the event is a stream chunk
-        match event {
-            DeserializedCompletionEvent::StreamChunk { completion, .. } => {
-                assert_eq!(completion, " The New York Times, May 15")
-            }
-            _ => panic!("Expected a stream chunk"),
-        }
-    }
-
-    #[test]
-    fn completion_summary_event_is_parsed() {
-        // Given some bytes with a stream summary and a completion summary
-        let bytes = b"data: {\"type\":\"stream_summary\",\"index\":0,\"model_version\":\"2022-04\",\"finish_reason\":\"maximum_tokens\"}\n\ndata: {\"type\":\"completion_summary\",\"num_tokens_prompt_total\":1,\"num_tokens_generated\":7}\n\n";
-
-        // When they are parsed
-        let events = HttpClient::parse_stream_event::<DeserializedCompletionEvent>(bytes);
-
-        // Then the first event is a stream summary and the last event is a completion summary
-        let first = events.first().unwrap().as_ref().unwrap();
-        match first {
-            DeserializedCompletionEvent::StreamSummary { finish_reason } => {
-                assert_eq!(finish_reason, "maximum_tokens")
-            }
-            _ => panic!("Expected a completion summary"),
-        }
-        let second = events.last().unwrap().as_ref().unwrap();
-        match second {
-            DeserializedCompletionEvent::CompletionSummary {
-                num_tokens_generated,
-                ..
-            } => {
-                assert_eq!(*num_tokens_generated, 7)
-            }
-            _ => panic!("Expected a completion summary"),
-        }
-    }
-
-    #[test]
-    fn chat_usage_event_is_parsed() {
-        // Given some bytes
-        let bytes = b"data: {\"id\": \"67c5b5f2-6672-4b0b-82b1-cc844127b214\",\"choices\": [],\"created\": 1739539146,\"model\": \"pharia-1-llm-7b-control\",\"system_fingerprint\": \".unknown.\",\"object\": \"chat.completion.chunk\",\"usage\": {\"prompt_tokens\": 20,\"completion_tokens\": 10,\"total_tokens\": 30}}";
-
-        // When they are parsed
-        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
-        let event = events.first().unwrap().as_ref().unwrap();
-
-        // Then the event has a usage
-        assert_eq!(event.usage.as_ref().unwrap().prompt_tokens, 20);
-        assert_eq!(event.usage.as_ref().unwrap().completion_tokens, 10);
-    }
-
-    #[test]
-    fn chat_stream_chunk_event_is_parsed() {
-        // Given some bytes
-        let bytes = b"data: {\"id\":\"831e41b4-2382-4b08-990e-0a3859967f43\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"logprobs\":null}],\"created\":1729782822,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
-
-        // When they are parsed
-        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
-        let event = events.first().unwrap().as_ref().unwrap();
-
-        // Then the event is a chat stream chunk
-        assert_eq!(event.choices.len(), 1);
+        // Then a completion event is yielded
+        assert_eq!(events.len(), 1);
         assert!(
-            matches!(&event.choices[0], DeserializedChatChunk::Delta { delta: StreamMessage { role: Some(role), .. }, .. } if role == "assistant")
+            matches!(events.remove(0).unwrap(), CompletionEvent::Delta { completion, .. } if completion == " The New York Times, May 15")
         );
     }
 
-    #[test]
-    fn chat_stream_chunk_without_role_is_parsed() {
-        // Given some bytes without a role
-        let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"content\":\"Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.\"},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+    #[tokio::test]
+    async fn completion_summary_event_is_parsed() {
+        // Given a completion task and part of its response stream that includes a finish reason and a summary
+        let task = TaskCompletion::from_text("An apple a day");
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"type\":\"stream_summary\",\"index\":0,\"model_version\":\"2022-04\",\"finish_reason\":\"maximum_tokens\"}\n\ndata: {\"type\":\"completion_summary\",\"num_tokens_prompt_total\":1,\"num_tokens_generated\":7}\n\n";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
 
-        // When they are parsed
-        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
-        let event = events.first().unwrap().as_ref().unwrap();
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
 
-        // Then the event is a chat stream chunk
-        assert_eq!(event.choices.len(), 1);
+        // Then a finish reason event and a summary event are yielded
+        assert_eq!(events.len(), 2);
         assert!(
-            matches!(&event.choices[0], DeserializedChatChunk::Delta { delta: StreamMessage { content, .. }, .. } if content == "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.")
+            matches!(events.remove(0).unwrap(), CompletionEvent::Finished { reason } if reason == "maximum_tokens")
+        );
+        assert!(
+            matches!(events.remove(0).unwrap(), CompletionEvent::Summary { usage, .. } if usage.prompt_tokens == 1 && usage.completion_tokens == 7)
         );
     }
 
-    #[test]
-    fn chat_stream_chunk_without_content_but_with_finish_reason_is_parsed() {
-        // Given some bytes without a role or content but with a finish reason
-        let bytes = b"data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"delta\":{},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+    #[tokio::test]
+    async fn chat_usage_event_is_parsed() {
+        // Given a chat task and part of its response stream that includes a usage event
+        let task = TaskChat::with_messages(vec![Message::user("An apple a day")]);
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"id\": \"67c5b5f2-6672-4b0b-82b1-cc844127b214\",\"choices\": [],\"created\": 1739539146,\"model\": \"pharia-1-llm-7b-control\",\"system_fingerprint\": \".unknown.\",\"object\": \"chat.completion.chunk\",\"usage\": {\"prompt_tokens\": 20,\"completion_tokens\": 10,\"total_tokens\": 30}}\n\n";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
 
-        // When they are parsed
-        let events = HttpClient::parse_stream_event::<StreamChatResponse>(bytes);
-        let event = events.first().unwrap().as_ref().unwrap();
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
 
-        // Then the event is a chat stream chunk with a done event
+        // Then a summary event is yielded
+        assert_eq!(events.len(), 1);
         assert!(
-            matches!(&event.choices[0], DeserializedChatChunk::Finished { finish_reason } if  finish_reason == "stop")
+            matches!(events.remove(0).unwrap(), ChatEvent::Summary { usage } if usage.prompt_tokens == 20 && usage.completion_tokens == 10)
+        );
+    }
+
+    #[tokio::test]
+    async fn chat_stream_chunk_with_role_is_parsed() {
+        // Given a chat task and part of its response stream that includes a stream chunk with a role
+        let task = TaskChat::with_messages(vec![Message::user("An apple a day")]);
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"id\":\"831e41b4-2382-4b08-990e-0a3859967f43\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"logprobs\":null}],\"created\":1729782822,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
+
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
+
+        // Then a message start event with a role is yielded
+        assert_eq!(events.len(), 1);
+        assert!(
+            matches!(events.remove(0).unwrap(), ChatEvent::MessageStart { role } if role == "assistant")
+        );
+    }
+
+    #[tokio::test]
+    async fn chat_stream_chunk_without_role_is_parsed() {
+        // Given a chat task and part of its response stream that includes a pure content stream chunk
+        let task = TaskChat::with_messages(vec![Message::user("An apple a day")]);
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":null,\"index\":0,\"delta\":{\"content\":\"Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.\"},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
+
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
+
+        // Then a message delta event with content is yielded
+        assert_eq!(events.len(), 1);
+        assert!(
+            matches!(events.remove(0).unwrap(), ChatEvent::MessageDelta { content, logprobs } if content == "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask." && logprobs.is_empty())
+        );
+    }
+
+    #[tokio::test]
+    async fn chat_stream_chunk_without_content_but_with_finish_reason_is_parsed() {
+        // Given a chat task and part of its response stream that includes a stream chunk with a finish reason
+        let task = TaskChat::with_messages(vec![Message::user("An apple a day")]);
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"id\":\"a3ceca7f-32b2-4a6c-89e7-bc8eb5327f76\",\"choices\":[{\"finish_reason\":\"stop\",\"index\":0,\"delta\":{},\"logprobs\":null}],\"created\":1729784197,\"model\":\"pharia-1-llm-7b-control\",\"system_fingerprint\":null,\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
+
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
+
+        // Then a message end event with a stop reason is yielded
+        assert_eq!(events.len(), 1);
+        assert!(
+            matches!(events.remove(0).unwrap(), ChatEvent::MessageEnd { stop_reason } if stop_reason == "stop")
         );
     }
 }

@@ -32,6 +32,7 @@ mod image_preprocessing;
 mod logprobs;
 mod prompt;
 mod semantic_embedding;
+mod sse;
 mod stream;
 mod tokenization;
 mod tracing;

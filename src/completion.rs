@@ -414,8 +414,8 @@ impl StreamTask for TaskCompletion<'_> {
         client.post(format!("{base}/complete")).json(&body)
     }
 
-    fn body_to_output(&self, response: Self::ResponseBody) -> Option<Self::Output> {
-        Some(match response {
+    fn body_to_output(&self, response: Self::ResponseBody) -> Self::Output {
+        match response {
             DeserializedCompletionEvent::StreamChunk {
                 completion,
                 raw_completion,
@@ -447,7 +447,7 @@ impl StreamTask for TaskCompletion<'_> {
                     completion_tokens: num_tokens_generated,
                 },
             },
-        })
+        }
     }
 }
 

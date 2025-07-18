@@ -186,9 +186,9 @@ impl HttpClient {
         Self::parse_stream_output(stream, task).await
     }
 
-    /// Parse a stream of bytes into a stream of [`StreamTask::Output`] objects.
+    /// Parse a stream of bytes into a stream of [`crate::StreamTask::Output`] objects.
     ///
-    /// The [`StreamTask::body_to_output`] allows each implementation to decide how to handle
+    /// The [`crate::StreamTask::body_to_output`] allows each implementation to decide how to handle
     /// the response events.
     pub async fn parse_stream_output<'task, T: StreamJob + Send + Sync + 'task>(
         stream: Pin<Box<dyn Stream<Item = reqwest::Result<Bytes>> + Send>>,
@@ -203,22 +203,23 @@ impl HttpClient {
             while let Some(item) = stream.next().await {
                 match item {
                     Ok(data) => {
-                        // The last stream event for the chat endpoint (not for the completion endpoint) always is "[DONE]"
-                        // While we could model this as a variant of the `ChatStreamChunk` enum, the value of this is
-                        // unclear, so we ignore it here.
+                        // The last stream event for the chat endpoint always is "[DONE]". We assume
+                        // that the consumer of this library is not interested in this event.
                         if data.trim() == "[DONE]" {
                             break;
                         }
-                        let parsed = serde_json::from_str(&data).map_err(|e| Error::InvalidStream {
-                            deserialization_error: e.to_string(),
-                        });
-                        match parsed {
-                            // Check if the output should be yielded or skipped
-                            Ok(b) => if let Some(output) = task.body_to_output(b) {
-                                yield Ok(output);
-                            }
+                        // Each task defines its response body as an associated type. This allows
+                        // us to define generic parsing logic for multiple streaming tasks. In
+                        // addition, tasks define an output type, which is a higher level
+                        // abstraction over the response body. With the `body_to_output` method,
+                        // tasks define logic to parse a response body into an output. This
+                        // decouples the parsing logic from the data handed to users.
+                        match serde_json::from_str::<T::ResponseBody>(&data) {
+                            Ok(b) => yield Ok(task.body_to_output(b)),
                             Err(e) => {
-                                yield Err(e);
+                                yield Err(Error::InvalidStream {
+                                    deserialization_error: e.to_string(),
+                                });
                             }
                         }
                     }

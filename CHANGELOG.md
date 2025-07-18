@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.29.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.28.0...aleph-alpha-client-v0.29.0) (2025-07-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove option wrapper around stream job/task output
+
+### Features
+
+* remove option wrapper around stream job/task output ([b17b8ed](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/b17b8ed7edf3d93c5e6d3f6048e07946215ba75b))
+
+
+### Bug Fixes
+
+* decoding of sse events ([b794f48](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/b794f48d1fcfb97517db80a2e6a15462ec1d45ea))
+
 ## [0.28.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.27.1...aleph-alpha-client-v0.28.0) (2025-07-01)
 
 

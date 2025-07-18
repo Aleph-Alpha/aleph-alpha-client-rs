@@ -1,13 +1,14 @@
 use std::{borrow::Cow, pin::Pin, time::Duration};
 
 use bytes::Bytes;
+use eventsource_stream::Eventsource;
 use futures_util::{stream::StreamExt, Stream};
 use reqwest::{header, ClientBuilder, RequestBuilder, Response, StatusCode};
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 use tokenizers::Tokenizer;
 
-use crate::{sse::SseStream, How, StreamJob, TraceContext};
+use crate::{How, StreamJob, TraceContext};
 use async_stream::stream;
 
 /// A job send to the Aleph Alpha Api using the http client. A job wraps all the knowledge required
@@ -197,15 +198,15 @@ impl HttpClient {
     where
         T::Output: 'static,
     {
-        let mut stream = SseStream::new(stream);
+        let mut stream = stream.eventsource();
 
         Ok(Box::pin(stream! {
             while let Some(item) = stream.next().await {
                 match item {
-                    Ok(data) => {
+                    Ok(event) => {
                         // The last stream event for the chat endpoint always is "[DONE]". We assume
                         // that the consumer of this library is not interested in this event.
-                        if data.trim() == "[DONE]" {
+                        if event.data.trim() == "[DONE]" {
                             break;
                         }
                         // Each task defines its response body as an associated type. This allows
@@ -214,7 +215,7 @@ impl HttpClient {
                         // abstraction over the response body. With the `body_to_output` method,
                         // tasks define logic to parse a response body into an output. This
                         // decouples the parsing logic from the data handed to users.
-                        match serde_json::from_str::<T::ResponseBody>(&data) {
+                        match serde_json::from_str::<T::ResponseBody>(&event.data) {
                             Ok(b) => yield Ok(task.body_to_output(b)),
                             Err(e) => {
                                 yield Err(Error::InvalidStream {
@@ -224,7 +225,9 @@ impl HttpClient {
                         }
                     }
                     Err(e) => {
-                        yield Err(e.into());
+                        yield Err(Error::InvalidStream {
+                            deserialization_error: e.to_string(),
+                        });
                     }
                 }
             }
@@ -503,6 +506,54 @@ mod tests {
         assert_eq!(events.len(), 1);
         assert!(
             matches!(events.remove(0).unwrap(), ChatEvent::MessageEnd { stop_reason } if stop_reason == "stop")
+        );
+    }
+
+    #[tokio::test]
+    async fn sse_event_split_over_multiple_chunks() {
+        // Given a completion task and an SSE event split across multiple chunks
+        let task = TaskCompletion::from_text("An apple a day");
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let chunks = vec![
+            "data: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\"",
+            " Hello world\"}\n\n",
+        ];
+        let stream = Box::pin(futures_util::stream::iter(
+            chunks.into_iter().map(|chunk| Ok(Bytes::from(chunk))),
+        ));
+
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
+
+        // Then a single completion event is yielded with the complete content
+        assert_eq!(events.len(), 1);
+        assert!(
+            matches!(events.remove(0).unwrap(), CompletionEvent::Delta { completion, .. } if completion == " Hello world")
+        );
+    }
+
+    #[tokio::test]
+    async fn two_sse_events_in_one_chunk() {
+        // Given a completion task and two SSE events in a single chunk
+        let task = TaskCompletion::from_text("An apple a day");
+        let job = task.with_model("pharia-1-llm-7b-control");
+        let bytes = "data: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\" First\"}\n\ndata: {\"type\":\"stream_chunk\",\"index\":0,\"completion\":\" Second\"}\n\n";
+        let stream = Box::pin(futures_util::stream::once(
+            async move { Ok(Bytes::from(bytes)) },
+        ));
+
+        // When converting it to a stream of events
+        let stream = HttpClient::parse_stream_output(stream, job).await.unwrap();
+        let mut events = stream.collect::<Vec<_>>().await;
+
+        // Then two completion events are yielded
+        assert_eq!(events.len(), 2);
+        assert!(
+            matches!(events.remove(0).unwrap(), CompletionEvent::Delta { completion, .. } if completion == " First")
+        );
+        assert!(
+            matches!(events.remove(0).unwrap(), CompletionEvent::Delta { completion, .. } if completion == " Second")
         );
     }
 }

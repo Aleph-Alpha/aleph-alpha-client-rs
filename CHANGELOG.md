@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.30.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.29.0...aleph-alpha-client-v0.30.0) (2025-10-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* merge message delta and finish reason event
+
+### Bug Fixes
+
+* merge message delta and finish reason event ([40ff3cb](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/commit/40ff3cb3fc1a83842e5d7dcbc091d31754fa921e))
+
 ## [0.29.0](https://github.com/Aleph-Alpha/aleph-alpha-client-rs/compare/aleph-alpha-client-v0.28.0...aleph-alpha-client-v0.29.0) (2025-07-18)
 
 

@@ -828,8 +828,10 @@ async fn stream_chat_with_pharia_1_llm_7b() {
     assert!(matches!(events[1], Ok(ChatEvent::MessageDelta { .. })));
     assert_eq!(
         events[2].as_ref().unwrap(),
-        &ChatEvent::MessageEnd {
-            stop_reason: "stop".to_owned()
+        &ChatEvent::MessageDelta {
+            finish_reason: Some("stop".to_owned()),
+            logprobs: vec![],
+            content: Some("".to_owned()),
         }
     );
     assert!(matches!(events[3], Ok(ChatEvent::Summary { .. })));

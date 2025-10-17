@@ -303,7 +303,7 @@ impl Client {
     ///     // Send the message to the model.
     ///     let mut stream = client.stream_chat(&task, model, &How::default()).await?;
     ///     while let Some(Ok(event)) = stream.next().await {
-    ///         if let ChatEvent::MessageDelta { content, logprobs: _ } = event {
+    ///         if let ChatEvent::MessageDelta { content: Some(content), .. } = event {
     ///             println!("{}", content);
     ///         }
     ///     }

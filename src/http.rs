@@ -484,7 +484,7 @@ mod tests {
         // Then a message delta event with content is yielded
         assert_eq!(events.len(), 1);
         assert!(
-            matches!(events.remove(0).unwrap(), ChatEvent::MessageDelta { content, logprobs } if content == "Hello! How can I help you today? If you have any questions or need assistance, feel free to ask." && logprobs.is_empty())
+            matches!(events.remove(0).unwrap(), ChatEvent::MessageDelta { content, logprobs, .. } if content == Some("Hello! How can I help you today? If you have any questions or need assistance, feel free to ask.".to_owned()) && logprobs.is_empty())
         );
     }
 
@@ -505,7 +505,7 @@ mod tests {
         // Then a message end event with a stop reason is yielded
         assert_eq!(events.len(), 1);
         assert!(
-            matches!(events.remove(0).unwrap(), ChatEvent::MessageEnd { stop_reason } if stop_reason == "stop")
+            matches!(events.remove(0).unwrap(), ChatEvent::MessageDelta { finish_reason, .. } if finish_reason == Some("stop".to_owned()))
         );
     }
 
